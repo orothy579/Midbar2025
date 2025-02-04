@@ -3,18 +3,23 @@
 */
 
 import mqtt from 'mqtt'
+import dotenv from 'dotenv'
 
-const brokerUrl = 'mqtt://nanomq:1883'
+dotenv.config()
+
+const brokerUrl = process.env.BROKER_URL || 'mqtt://nanomq:1883'
+const topic = process.env.TOPIC || 'test/topic'
+
 const client = mqtt.connect(brokerUrl)
 
 client.on('connect', () => {
     console.log('Subscriber connected to nanoMQ')
-    client.subscribe('test/topic', (err) => {
+    client.subscribe(topic, (err) => {
         if (err) {
             console.error('Subscribe error:', err)
             return
         }
-        console.log('Subscribed to test/topic')
+        console.log(`Subscribed to ${topic}`)
     })
 })
 

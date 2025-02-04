@@ -8,6 +8,6 @@ RUN npm install
 COPY . ./
 RUN npm run build
 
-RUN chmod +X start.sh
+RUN chmod +x start.sh
 
 CMD ["sh", "./start.sh"]
