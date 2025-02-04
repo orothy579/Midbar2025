@@ -7,30 +7,24 @@ services:
         networks:
             - iotnet
 
-    # node_subscriber:
-    #   build: ./node_app
-    #   container_name: node_subscriber
-    #   networks:
-    #     - iotnet
-    #   depends_on:
-    #     - nanomq
-    #   command: ["node", "dist/subscriber.js"]
-    # node_publisher:
-    #   build: ./node_app
-    #   container_name: node_publisher
-    #   networks:
-    #     - iotnet
-    #   depends_on:
-    #     - nanomq
-    #   command: ["node", "dist/publisher.js"]
-
-    node_app:
-        build: ./node_app
-        container_name: node_app
-        depends_on:
-            - nanomq
+    node_subscriber:
+        build:
+            context: ./node_app
+            dockerfile: Dockerfile.subscriber
+        container_name: node_subscriber
         networks:
             - iotnet
+        depends_on:
+            - nanomq
+    node_publisher:
+        build: 
+            context: ./node_app
+            dockerfile: Dockerfile.publisher
+        container_name: node_publisher
+        networks:
+            - iotnet
+        depends_on:
+            - nanomq
 
 networks:
     iotnet:
