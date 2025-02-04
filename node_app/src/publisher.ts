@@ -1,11 +1,7 @@
-/*
-  publisher.ts
-*/
-
 import mqtt from 'mqtt'
-import dotenv from 'dotenv'
+import {config} from 'dotenv'
 
-dotenv.config()
+config()
 
 const brokerUrl = process.env.BROKER_URL || 'mqtt://nanomq:1883'
 const baseTopic = process.env.TOPIC || 'test/'
@@ -21,15 +17,15 @@ client.on('connect', () => {
         setInterval(() => {
             const payload = {
                 airfarm,
-                temperature: Math.floor(Math.random() * 100),
-                humidity: Math.floor(Math.random() * 100),
-                led: Math.random() > 0.5 ? 'on' : 'off',
+                temperature: Math.floor(Math.random() * 10),
+                humidity: Math.floor(Math.random() * 30),
+                led: Math.random() > 0.3 ? 'on' : 'off',
             }
 
             const topic = `${baseTopic}/${airfarm}`
             client.publish(topic, JSON.stringify(payload))
             console.log(`Published to ${topic} : ${JSON.stringify(payload)}`)
-        }, 5000)
+        }, 1000)
     })
 })
 

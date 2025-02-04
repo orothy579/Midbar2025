@@ -1,7 +1,3 @@
-/*
-  subscriber.ts
-*/
-
 import mqtt from 'mqtt'
 import dotenv from 'dotenv'
 import { sleep } from './utils'
