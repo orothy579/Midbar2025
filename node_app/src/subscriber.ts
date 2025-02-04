@@ -4,6 +4,7 @@
 
 import mqtt from 'mqtt'
 import dotenv from 'dotenv'
+import { sleep } from './utils'
 
 dotenv.config()
 
@@ -26,6 +27,9 @@ client.on('connect', () => {
             }
             console.log(`Subscribed to ${topic}`)
         })
+    })
+    sleep(1000).then(() => {
+        console.log('Subscriber ready')
     })
 })
 

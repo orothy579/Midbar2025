@@ -16,6 +16,7 @@ services:
             - iotnet
         depends_on:
             - nanomq
+        
     node_publisher:
         build: 
             context: ./node_app
