@@ -1,8 +1,5 @@
 import mqtt from 'mqtt'
-import dotenv from 'dotenv'
 import { z } from 'zod'
-
-dotenv.config()
 
 const baseTopic = process.env.TOPIC || 'test/'
 
@@ -16,63 +13,72 @@ export const AirfarmDataSchema = z.object({
     timestamp: z.string().datetime(),
 })
 
-export class TaskController {
-    private client: mqtt.MqttClient
-    private airfarms: Map<string, z.infer<typeof AirfarmDataSchema>>
+type AirfarmData = z.infer<typeof AirfarmDataSchema>
+type DeviceAction = 'on' | 'off'
 
-    constructor(client: mqtt.MqttClient) {
-        this.client = client
-        this.airfarms = new Map()
+const parseMessage = (message: Buffer) => {
+    try {
+        return JSON.parse(message.toString())
+    } catch (err) {
+        console.error('Parse error:', err)
+        return null
     }
+}
 
-    public handleMessage(topic: string, message: Buffer) {
-        try {
-            const parsedMessage = JSON.parse(message.toString())
-            const result = AirfarmDataSchema.safeParse(parsedMessage)
-            if (result.success) {
-                console.log(`Received valid message from ${topic}:`, result.data)
-                const airfarmId = topic.split('/').pop()
-                if (!airfarmId) return
-
-                this.airfarms.set(airfarmId, result.data)
-                this.processRules(airfarmId, result.data)
-            } else {
-                console.error(`Received invalid message from ${topic}:`, result.error)
-            }
-        } catch (err) {
-            console.error(`Error parsing message from ${topic}:`, err)
-        }
+const validateData = (data: unknown) => {
+    const result = AirfarmDataSchema.safeParse(data)
+    if (result.success) {
+        console.log('Data:', result.data)
+        return result.data
     }
+    console.error('Validation error:', result.error)
+    return null
+}
 
-    private processRules(airfarmId: string, data: z.infer<typeof AirfarmDataSchema>) {
-        if (data.temperature > 25 || data.co2Level > 800) {
-            this.controlDevice(airfarmId, 'fan', 'on')
-        } else {
-            this.controlDevice(airfarmId, 'fan', 'off')
-        }
-
-        if (data.humidity < 40) {
-            this.controlDevice(airfarmId, 'pump', 'on')
-            setTimeout(() => {
-                this.controlDevice(airfarmId, 'pump', 'off')
-            }, 5000)
-        }
-
-        if (data.co2Level > 1000) {
-            this.controlDevice(airfarmId, 'led', 'on')
-        } else {
-            this.controlDevice(airfarmId, 'led', 'off')
-        }
-    }
-
-    private controlDevice(airfarmId: string, device: string, action: 'on' | 'off') {
+// 이 함수 뭔지 알고 싶다. 각 airfarm의 데이터를 받아서, 그 데이터를 기반으로 각 airfarm의 장치들을 제어하는 함수인 것 같다.
+const controlDevice =
+    (client: mqtt.MqttClient) => (airfarmId: string, device: string, action: DeviceAction) => {
         const topic = `${baseTopic}/control/${airfarmId}/${device}`
-        const message = JSON.stringify({ action })
-        this.client.publish(topic, message)
+        client.publish(topic, JSON.stringify({ action }))
         console.log(`[${airfarmId}] Setting ${device} to ${action}`)
     }
 
-    public getAirfarmStatus(airfarmId: string): z.infer<typeof AirfarmDataSchema> | undefined {
-        return this.airfarms.get(airfarmId)
+const processRules =
+    (control: ReturnType<typeof controlDevice>) => (airfarmId: string, data: AirfarmData) => {
+        if (data.temperature > 25 || data.co2Level > 800) {
+            control(airfarmId, 'fan', 'on')
+        } else {
+            control(airfarmId, 'fan', 'off')
+        }
+
+        if (data.humidity < 40) {
+            control(airfarmId, 'pump', 'on')
+            setTimeout(() => control(airfarmId, 'pump', 'off'), 5000)
+        }
+
+        if (data.co2Level > 1000) {
+            control(airfarmId, 'led', 'on')
+        } else {
+            control(airfarmId, 'led', 'off')
+        }
+    }
+
+export const TaskController = (client: mqtt.MqttClient) => {
+    const control = controlDevice(client)
+    const process = processRules(control)
+
+    return {
+        handleMessage: (topic: string, message: Buffer) => {
+            const parsed = parseMessage(message)
+            if (!parsed) return
+
+            const data = validateData(parsed)
+            if (!data) return
+
+            const airfarmId = topic.split('/').pop()
+            if (!airfarmId) return
+
+            process(airfarmId, data)
+        },
     }
 }

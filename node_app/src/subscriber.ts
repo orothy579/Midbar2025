@@ -9,7 +9,7 @@ const baseTopic = process.env.TOPIC || 'test/'
 
 const client = mqtt.connect(brokerUrl)
 const airfarms = ['airfarm1', 'airfarm2', 'airfarm3', 'airfarm4', 'airfarm5']
-const taskController = new TaskController(client)
+const taskController = TaskController(client)
 
 client.on('connect', () => {
     console.log('Subscriber connected to nanoMQ')

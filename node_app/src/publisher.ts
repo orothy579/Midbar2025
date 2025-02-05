@@ -10,6 +10,7 @@ const baseTopic = process.env.TOPIC || 'test/'
 const client = mqtt.connect(brokerUrl)
 
 const airfarms = ['airfarm1', 'airfarm2', 'airfarm3', 'airfarm4', 'airfarm5']
+
 interface AirfarmData {
     temperature: number
     humidity: number
@@ -40,7 +41,7 @@ client.on('connect', () => {
             const payload = generateDummyData()
             const topic = `${baseTopic}/${airfarm}`
             client.publish(topic, JSON.stringify(payload))
-        }, 30000)
+        }, 1000)
     })
 })
 
