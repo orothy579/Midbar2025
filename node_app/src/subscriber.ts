@@ -2,7 +2,6 @@ import mqtt from 'mqtt'
 import dotenv from 'dotenv'
 import { sleep } from './utils'
 import { z } from 'zod'
-import { fakerNB_NO, hu } from '@faker-js/faker/.'
 
 dotenv.config()
 
