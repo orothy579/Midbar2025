@@ -1,8 +1,8 @@
 import mqtt from 'mqtt'
-import { config } from 'dotenv'
+import dotenv from 'dotenv'
 import { faker } from '@faker-js/faker'
 
-config()
+dotenv.config()
 
 const brokerUrl = process.env.BROKER_URL || 'mqtt://nanomq:1883'
 const baseTopic = process.env.TOPIC || 'test/'
@@ -32,18 +32,15 @@ function generateDummyData(): AirfarmData {
     }
 }
 
-const dummyDataList: AirfarmData[] = Array.from({ length: 5 }, () => generateDummyData())
-
 client.on('connect', () => {
     console.log(`Publisher connected to nanoMQ on ${brokerUrl}`)
 
     airfarms.forEach((airfarm) => {
-        // 왜 forEach를 사용하는지 이해가 안됨, 그리고 왜 airfarm 이 하나로 고정되고 안 넘어가는지 이해 안됨
         setInterval(() => {
-            const payload = dummyDataList
+            const payload = generateDummyData()
             const topic = `${baseTopic}/${airfarm}`
             client.publish(topic, JSON.stringify(payload))
-        }, 1000)
+        }, 5000)
     })
 })
 
