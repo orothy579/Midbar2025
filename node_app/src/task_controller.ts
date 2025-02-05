@@ -6,16 +6,6 @@ dotenv.config()
 
 const baseTopic = process.env.TOPIC || 'test/'
 
-export interface AirfarmData {
-    temperature: number
-    humidity: number
-    co2Level: number
-    led: 'on' | 'off'
-    fan: 'on' | 'off'
-    pump: 'on' | 'off'
-    timestamp: string
-}
-
 export const AirfarmDataSchema = z.object({
     temperature: z.number(),
     humidity: z.number(),
@@ -28,7 +18,7 @@ export const AirfarmDataSchema = z.object({
 
 export class TaskController {
     private client: mqtt.MqttClient
-    private airfarms: Map<string, AirfarmData>
+    private airfarms: Map<string, z.infer<typeof AirfarmDataSchema>>
 
     constructor(client: mqtt.MqttClient) {
         this.client = client
@@ -54,7 +44,7 @@ export class TaskController {
         }
     }
 
-    private processRules(airfarmId: string, data: AirfarmData) {
+    private processRules(airfarmId: string, data: z.infer<typeof AirfarmDataSchema>) {
         if (data.temperature > 25 || data.co2Level > 800) {
             this.controlDevice(airfarmId, 'fan', 'on')
         } else {
@@ -82,7 +72,7 @@ export class TaskController {
         console.log(`[${airfarmId}] Setting ${device} to ${action}`)
     }
 
-    public getAirfarmStatus(airfarmId: string): AirfarmData | undefined {
+    public getAirfarmStatus(airfarmId: string): z.infer<typeof AirfarmDataSchema> | undefined {
         return this.airfarms.get(airfarmId)
     }
 }
