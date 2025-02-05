@@ -40,7 +40,7 @@ client.on('connect', () => {
             const payload = generateDummyData()
             const topic = `${baseTopic}/${airfarm}`
             client.publish(topic, JSON.stringify(payload))
-        }, 5000)
+        }, 30000)
     })
 })
 

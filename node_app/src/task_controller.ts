@@ -1,12 +1,12 @@
 import mqtt from 'mqtt'
 import dotenv from 'dotenv'
+import { z } from 'zod'
 
 dotenv.config()
 
-const brokerUrl = process.env.BROKER_URL || 'mqtt://nanomq:1883'
 const baseTopic = process.env.TOPIC || 'test/'
 
-interface AirfarmData {
+export interface AirfarmData {
     temperature: number
     humidity: number
     co2Level: number
@@ -16,63 +16,51 @@ interface AirfarmData {
     timestamp: string
 }
 
-class TaskController {
+export const AirfarmDataSchema = z.object({
+    temperature: z.number(),
+    humidity: z.number(),
+    co2Level: z.number(),
+    led: z.enum(['on', 'off']),
+    fan: z.enum(['on', 'off']),
+    pump: z.enum(['on', 'off']),
+    timestamp: z.string().datetime(),
+})
+
+export class TaskController {
     private client: mqtt.MqttClient
     private airfarms: Map<string, AirfarmData>
 
-    constructor() {
-        this.client = mqtt.connect(brokerUrl)
+    constructor(client: mqtt.MqttClient) {
+        this.client = client
         this.airfarms = new Map()
-        this.setupMqttHandlers()
     }
 
-    private setupMqttHandlers() {
-        this.client.on('connect', () => {
-            console.log('Task controller connected to nanoMQ')
-            this.subscribeToTopics()
-        })
-
-        this.client.on('message', (topic, message) => {
-            this.handleMessage(topic, message)
-        })
-
-        this.client.on('error', (err) => {
-            console.error('Task controller error:', err)
-        })
-    }
-
-    private subscribeToTopics() {
-        this.client.subscribe(`${baseTopic}/#`, (err) => {
-            if (err) {
-                console.error('Subscribe error:', err)
-                return
-            }
-            console.log(`Subscribed to ${baseTopic}/#`)
-        })
-    }
-
-    private handleMessage(topic: string, message: Buffer) {
+    public handleMessage(topic: string, message: Buffer) {
         try {
-            const data = JSON.parse(message.toString()) as AirfarmData
-            const airfarmId = topic.split('/').pop()
-            if (!airfarmId) return
+            const parsedMessage = JSON.parse(message.toString())
+            const result = AirfarmDataSchema.safeParse(parsedMessage)
+            if (result.success) {
+                console.log(`Received valid message from ${topic}:`, result.data)
+                const airfarmId = topic.split('/').pop()
+                if (!airfarmId) return
 
-            this.airfarms.set(airfarmId, data)
-            this.processRules(airfarmId, data)
+                this.airfarms.set(airfarmId, result.data)
+                this.processRules(airfarmId, result.data)
+            } else {
+                console.error(`Received invalid message from ${topic}:`, result.error)
+            }
         } catch (err) {
-            console.error('Error handling message:', err)
+            console.error(`Error parsing message from ${topic}:`, err)
         }
     }
 
     private processRules(airfarmId: string, data: AirfarmData) {
-        // Fan control
         if (data.temperature > 25 || data.co2Level > 800) {
             this.controlDevice(airfarmId, 'fan', 'on')
         } else {
             this.controlDevice(airfarmId, 'fan', 'off')
         }
 
-        // Pump control
         if (data.humidity < 40) {
             this.controlDevice(airfarmId, 'pump', 'on')
             setTimeout(() => {
@@ -80,7 +68,6 @@ class TaskController {
             }, 5000)
         }
 
-        // LED control
         if (data.co2Level > 1000) {
             this.controlDevice(airfarmId, 'led', 'on')
         } else {
@@ -99,5 +86,3 @@ class TaskController {
         return this.airfarms.get(airfarmId)
     }
 }
-
-export const taskController = new TaskController()
