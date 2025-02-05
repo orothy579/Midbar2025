@@ -1,32 +1,32 @@
 services:
-    nanomq:
-        image: emqx/nanomq:latest
-        container_name: nanomq_broker
-        ports:
-            - '1883:1883'
-        networks:
-            - iotnet
+  nanomq:
+    image: emqx/nanomq:latest
+    container_name: nanomq_broker
+    ports:
+      - "1883:1883"
+    networks:
+      - iotnet
 
-    node_subscriber:
-        build:
-            context: ./node_app
-            dockerfile: Dockerfile.subscriber
-        container_name: node_subscriber
-        networks:
-            - iotnet
-        depends_on:
-            - nanomq
-        
-    node_publisher:
-        build: 
-            context: ./node_app
-            dockerfile: Dockerfile.publisher
-        container_name: node_publisher
-        networks:
-            - iotnet
-        depends_on:
-            - nanomq
+  node_subscriber:
+    build:
+      context: ./node_app
+      dockerfile: Dockerfile.subscriber
+    container_name: node_subscriber
+    networks:
+      - iotnet
+    depends_on:
+      - nanomq
+
+  node_publisher:
+    build:
+      context: ./node_app
+      dockerfile: Dockerfile.publisher
+    container_name: node_publisher
+    networks:
+      - iotnet
+    depends_on:
+      - nanomq
 
 networks:
-    iotnet:
-        driver: bridge
+  iotnet:
+    driver: bridge
