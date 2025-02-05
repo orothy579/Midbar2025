@@ -9,9 +9,8 @@ const baseTopic = process.env.TOPIC || 'test/'
 
 const client = mqtt.connect(brokerUrl)
 
-const airfarms = ['airfarm4', 'airfarm7', 'airfarm13', 'airfarm14', 'airfarm15']
+const airfarms = ['airfarm1', 'airfarm2', 'airfarm3', 'airfarm4', 'airfarm5']
 interface AirfarmData {
-    airfarm: string
     temperature: number
     humidity: number
     co2Level: number
@@ -23,7 +22,6 @@ interface AirfarmData {
 
 function generateDummyData(): AirfarmData {
     return {
-        airfarm: faker.helpers.arrayElement(airfarms),
         temperature: parseFloat(faker.number.float({ min: 15, max: 30 }).toFixed(1)),
         humidity: faker.number.int({ min: 30, max: 70 }),
         co2Level: faker.number.int({ min: 300, max: 1000 }),
@@ -40,11 +38,11 @@ client.on('connect', () => {
     console.log(`Publisher connected to nanoMQ on ${brokerUrl}`)
 
     airfarms.forEach((airfarm) => {
+        // 왜 forEach를 사용하는지 이해가 안됨, 그리고 왜 airfarm 이 하나로 고정되고 안 넘어가는지 이해 안됨
         setInterval(() => {
             const payload = dummyDataList
             const topic = `${baseTopic}/${airfarm}`
             client.publish(topic, JSON.stringify(payload))
-            console.log(`Published to ${topic} : ${JSON.stringify(payload)}`)
         }, 1000)
     })
 })
