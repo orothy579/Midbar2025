@@ -9,4 +9,4 @@ COPY . ./
 
 RUN npm run build
 
-CMD ["node", "dist/subscriber.js"]
+CMD ["node", "dist/io.js"]
