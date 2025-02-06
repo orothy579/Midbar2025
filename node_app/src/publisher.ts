@@ -30,7 +30,7 @@ client.on('connect', () => {
     setInterval(() => {
         const payload = generateDummyData()
         client.publish(SENSOR_TOPIC, JSON.stringify(payload))
-    }, 1000)
+    }, 10000)
 })
 
 client.on('error', (err) => {
