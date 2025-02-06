@@ -7,25 +7,29 @@ services:
     networks:
       - iotnet
 
-  node_subscriber:
+  node_io:
     build:
       context: ./node_app
-      dockerfile: Dockerfile.subscriber
-    container_name: node_subscriber
+      dockerfile: Dockerfile.io
+    container_name: node_io
     networks:
       - iotnet
     depends_on:
       - nanomq
+    environment:
+      BROKER_URL: mqtt://nanomq:1883
 
-  node_publisher:
+  node_controller:
     build:
       context: ./node_app
-      dockerfile: Dockerfile.publisher
-    container_name: node_publisher
+      dockerfile: Dockerfile.controller
+    container_name: node_controller
     networks:
       - iotnet
     depends_on:
       - nanomq
+    environment:
+      BROKER_URL: mqtt://nanomq:1883
 
 networks:
   iotnet:
