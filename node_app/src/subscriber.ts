@@ -5,10 +5,11 @@ import { AirfarmDataSchema } from './publisher'
 
 dotenv.config()
 
+const localBrokerUrl = process.env.LOCAL_BROKER_URL || ''
 const brokerUrl = process.env.BROKER_URL || ''
 const SENSOR_TOPIC = process.env.SENSOR_TOPIC || ''
 
-const client = mqtt.connect(brokerUrl)
+const client = mqtt.connect(localBrokerUrl)
 
 const validateData = (data: unknown) => {
     const result = AirfarmDataSchema.safeParse(data)

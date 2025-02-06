@@ -5,10 +5,11 @@ import { faker } from '@faker-js/faker'
 
 dotenv.config()
 
+const localBrokerUrl = process.env.LOCAL_BROKER_URL || ''
 const brokerUrl = process.env.BROKER_URL || ''
 const SENSOR_TOPIC = process.env.SENSOR_TOPIC || ''
 
-const client = mqtt.connect(brokerUrl)
+const client = mqtt.connect(localBrokerUrl)
 
 export const AirfarmDataSchema = z.object({
     temperature: z.number(),
