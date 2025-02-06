@@ -1,7 +1,7 @@
 import mqtt from 'mqtt'
 import dotenv from 'dotenv'
-import { z } from 'zod'
 import { controlFan, controlPump, controlLed, getDeviceStatus } from './task_controller'
+import { AirfarmDataSchema } from './publisher'
 
 dotenv.config()
 
@@ -9,13 +9,6 @@ const brokerUrl = process.env.BROKER_URL || ''
 const SENSOR_TOPIC = process.env.SENSOR_TOPIC || ''
 
 const client = mqtt.connect(brokerUrl)
-
-const AirfarmDataSchema = z.object({
-    temperature: z.number(),
-    humidity: z.number(),
-    co2Level: z.number(),
-    timestamp: z.string().datetime(),
-})
 
 const validateData = (data: unknown) => {
     const result = AirfarmDataSchema.safeParse(data)

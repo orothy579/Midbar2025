@@ -1,5 +1,6 @@
 import mqtt from 'mqtt'
 import dotenv from 'dotenv'
+import { z } from 'zod'
 import { faker } from '@faker-js/faker'
 
 dotenv.config()
@@ -9,12 +10,14 @@ const SENSOR_TOPIC = process.env.SENSOR_TOPIC || ''
 
 const client = mqtt.connect(brokerUrl)
 
-interface AirfarmData {
-    temperature: number
-    humidity: number
-    co2Level: number
-    timestamp: string
-}
+export const AirfarmDataSchema = z.object({
+    temperature: z.number(),
+    humidity: z.number(),
+    co2Level: z.number(),
+    timestamp: z.string().datetime(),
+})
+
+type AirfarmData = z.infer<typeof AirfarmDataSchema>
 
 function generateDummyData(): AirfarmData {
     return {
