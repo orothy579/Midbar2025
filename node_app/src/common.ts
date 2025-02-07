@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+export const DATA_TOPIC = 'airfarm/+/data'
 export const SENSOR_TOPIC = 'airfarm/sensors/data'
 export const IO_TOPIC = 'airfarm/io/data'
 export const FAN_CONTROL_TOPIC = 'airfarm/control/fan'

@@ -48,12 +48,14 @@ client.on('connect', () => {
     setInterval(() => {
         const payload = generateDummyData()
         pub(SENSOR_TOPIC, payload)
-        pub(IO_TOPIC, deviceStatus)
+        pub(IO_TOPIC, deviceStatus) // publish current device status
     }, 10000)
 })
 
 client.on('message', (topic, message) => {
     const payload = JSON.parse(message.toString())
+
+    console.log('Received control message:', topic, payload)
 
     if (topic === FAN_CONTROL_TOPIC) {
         deviceStatus.fan = z.boolean().parse(payload)

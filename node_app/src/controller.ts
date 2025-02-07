@@ -2,6 +2,7 @@ import mqtt from 'mqtt'
 import dotenv from 'dotenv'
 import {
     airfarmDataSchema,
+    DATA_TOPIC,
     deviceStateSchema,
     FAN_CONTROL_TOPIC,
     IO_TOPIC,
@@ -9,7 +10,6 @@ import {
     PUMP_CONTROL_TOPIC,
     SENSOR_TOPIC,
 } from './common'
-import { ZodAny } from 'zod'
 
 dotenv.config()
 
@@ -25,17 +25,18 @@ function pub(topic: string, message: unknown) {
 }
 
 client.on('connect', () => {
-    console.log('Subscriber connected to nanoMQ')
+    console.log('\nSubscriber connected to nanoMQ')
 
-    client.subscribe(SENSOR_TOPIC, (err) => {
+    client.subscribe(DATA_TOPIC, (err) => {
         if (err) {
             console.error('Subscribe error:', err)
             return
         }
-        console.log(`Subscribed to ${SENSOR_TOPIC}`)
+        console.log(`Subscribed to ${DATA_TOPIC}`)
     })
 })
 
+// mqtt-router.ts 에서 만들어져 있는 것들 가져다가 쓰는 형태로 바꾸자
 type Route = { topic: string; schema: any; handler: (topic: string, data: unknown) => void }
 const routes: Route[] = []
 
@@ -45,7 +46,7 @@ function match(topic: string, schema: any, handler: (topic: string, msg: unknown
 
 match(SENSOR_TOPIC, airfarmDataSchema, (topic, data) => {
     const validatedData = airfarmDataSchema.parse(data)
-    console.log('valid SENSOR Data:', validatedData)
+    console.log('\nvalid SENSOR Data:', validatedData)
 
     const isFanOn = validatedData.temperature > 25
     pub(FAN_CONTROL_TOPIC, isFanOn)
@@ -57,12 +58,13 @@ match(SENSOR_TOPIC, airfarmDataSchema, (topic, data) => {
     pub(LED_CONTROL_TOPIC, isLedOn)
 })
 
-match(IO_TOPIC, airfarmDataSchema, (topic, data) => {
+// 왜 4번 이나 실행되지?
+//  --> io.ts 에서 4번 publish 하기 때문
+//  --> 그렇다면 4번 pub 이 필요한가?
+//  --> 각 device 에 대한 control 이 있을 때마다 publish 한다. + 10초마다 iodata 를 publish 한다.
+match(IO_TOPIC, deviceStateSchema, (topic, data) => {
     const validatedData = deviceStateSchema.parse(data)
-    console.log('valid IO Data:', validatedData)
-    console.log(`Fan status: ${validatedData.fan}`)
-    console.log(`Pump status: ${validatedData.pump}`)
-    console.log(`LED status: ${validatedData.led}`)
+    console.log('\nvalid IO Data:', validatedData)
 })
 
 client.on('message', (topic, message) => {

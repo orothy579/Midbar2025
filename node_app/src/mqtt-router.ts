@@ -7,7 +7,6 @@ export type MqttRoute = {
     schema?: z.ZodType
     handler: MqttRouterHandler<any>
 }
-
 export class MqttRouter {
     private routes: MqttRoute[] = []
 
