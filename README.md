@@ -1,12 +1,16 @@
-# Control
+# MQTT Test Application
 
-pub -> cmd led, fan
+This document outlines the MQTT topics used for controlling devices and managing IO.
 
-sub <- datas (sensing, led,fan)
+## Control
 
-# IO
+pub -> cmd led, fan on/off [control topic]
 
-pub -> sensing data(temp, humid, co2)
-pub -> led,fan data (led, fan)
+sub <- datas (sensing, led, fan) [sensor topic , IO topic]
 
-sub <- cmd led, fan on/off
+## IO
+
+pub -> sensing data(temp, humid, co2) [sensor topic]
+pub -> led, fan data (led, fan)  [IO topic]
+
+sub <- cmd led, fan on/off [control topic]
