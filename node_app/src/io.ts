@@ -6,10 +6,10 @@ import {
     AirfarmData,
     DeviceState,
     FAN_CONTROL_TOPIC,
-    IO_TOPIC,
     LED_CONTROL_TOPIC,
     PUMP_CONTROL_TOPIC,
     SENSOR_TOPIC,
+    IO_TOPIC,
 } from './common'
 
 dotenv.config()
@@ -22,14 +22,14 @@ if (!brokerUrl) {
 
 const client = mqtt.connect(brokerUrl)
 
-function pub(topic: string, message: unknown) {
-    client.publish(topic, JSON.stringify(message))
-}
-
 const deviceStatus: DeviceState = {
     fan: false,
     pump: false,
     led: false,
+}
+
+function pub(topic: string, message: unknown) {
+    client.publish(topic, JSON.stringify(message))
 }
 
 function generateDummyData(): AirfarmData {

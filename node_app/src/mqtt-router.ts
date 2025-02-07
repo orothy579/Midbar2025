@@ -2,6 +2,7 @@ import mqttMatch from 'mqtt-match'
 import z from 'zod'
 
 export type MqttRouterHandler<T> = (msg: T, topic: string, param: string | undefined) => void
+
 export type MqttRoute = {
     path: string
     schema?: z.ZodType
@@ -15,6 +16,7 @@ export class MqttRouter {
         schema: $Schema,
         handler: MqttRouterHandler<z.infer<$Schema>>
     ): void
+
     match<T>(path: string, handler: MqttRouterHandler<T>): void
 
     match<T>(
