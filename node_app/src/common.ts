@@ -14,11 +14,11 @@ export const airfarmDataSchema = z.object({
     timestamp: z.string().datetime(),
 })
 
-export type AirfarmData = z.infer<typeof airfarmDataSchema>
+export type airfarmData = z.infer<typeof airfarmDataSchema>
 
 export const deviceStateSchema = z.object({
     fan: z.boolean(),
     pump: z.boolean(),
     led: z.boolean(),
 })
-export type DeviceState = z.infer<typeof deviceStateSchema>
+export type deviceState = z.infer<typeof deviceStateSchema>
