@@ -69,14 +69,24 @@ client.on('connect', () => {
 })
 
 function updateState() {
+    // LED 효과
     if (deviceStatus.led) {
-        airfarmData.temperature += 0.1
+        airfarmData.temperature += 0.1 // LED 작동으로 발생하는 열
+        airfarmData.co2Level -= 5 // LED 작동으로 광합성 -> co2 농도 감소
+    } else {
+        airfarmData.temperature -= 0.05 // LED가 꺼져있으면 온도가 서서히 떨어짐
     }
+
+    // Fan 효과
     if (deviceStatus.fan) {
-        airfarmData.temperature -= 0.1
+        // airfarmData.temperature -= 0.1 // Fan 작동으로 열이 빠져나감
+        airfarmData.co2Level += 10 // 환기로 외부의 co2 유입되어 co2 농도 상승
+        airfarmData.humidity -= 0.1 // Fan 작동으로 습도 감소
     }
+
+    // Pump 효과
     if (deviceStatus.pump) {
-        airfarmData.humidity += 0.2
+        airfarmData.humidity += 0.2 // pump 작동으로 습도 상승
     }
 }
 
