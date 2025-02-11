@@ -6,7 +6,8 @@ This document outlines the MQTT topics used for controlling devices and managing
 
 pub -> cmd led, fan on/off [control topic]
 
-sub <- datas (sensing, led, fan) [sensor topic , IO topic]
+sub <- sensing data [sensor topic]
+sub <- led, fan data [IO topic]
 
 ## IO
 

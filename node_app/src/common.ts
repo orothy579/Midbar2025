@@ -12,10 +12,10 @@ export const LED_CONTROL_TOPIC = 'airfarm/control/led'
 export const THRESHOLD_TOPIC = 'airfarm/threshold/+'
 export const TEMP_MAX_THREHSHOLD_TOPIC = 'airfarm/threshold/maxTemp'
 export const TEMP_MIN_THREHSHOLD_TOPIC = 'airfarm/threshold/minTemp'
-export const HUMID_MAX_THRESHOLD_TOPIC = 'airfarm/threshold/maxHumid'
-export const HUMID_MIN_THRESHOLD_TOPIC = 'airfarm/threshold/minHumid'
 export const CO2_MAX_THRESHOLD_TOPIC = 'airfarm/threshold/maxCo2'
 export const CO2_MIN_THRESHOLD_TOPIC = 'airfarm/threshold/minCo2'
+export const HUMID_MAX_THRESHOLD_TOPIC = 'airfarm/threshold/maxHumid'
+export const HUMID_MIN_THRESHOLD_TOPIC = 'airfarm/threshold/minHumid'
 
 export const airfarmDataSchema = z.object({
     temperature: z.number(),

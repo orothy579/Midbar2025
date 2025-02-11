@@ -94,48 +94,49 @@ router.match(THRESHOLD_TOPIC, thresholdSchema, (message, topic, param) => {
 router.match(SENSOR_TOPIC, airfarmDataSchema, (message) => {
     console.log('\nvalid SENSOR Data:', message)
 
+    console.log('Current Thresholds:', thresholds)
     // LED 제어 : 온도 기준 컨트롤
     if (message.temperature > thresholds.maxTemp) {
         if (deviceStatus.led !== false) {
             deviceStatus.led = false
             pub(LED_CONTROL_TOPIC, deviceStatus.led)
-            console.log('LED OFF : temp >=', thresholds.maxTemp)
+            console.log('LED OFF : temp >', thresholds.maxTemp)
         }
     } else if (message.temperature < thresholds.minTemp) {
         if (deviceStatus.led !== true) {
             deviceStatus.led = true
             pub(LED_CONTROL_TOPIC, deviceStatus.led)
-            console.log('LED ON : temp <=', thresholds.minTemp)
-        }
-    }
-
-    // FAN 제어 : CO2 기준 컨트롤
-    if (message.co2Level < thresholds.minCo2) {
-        if (deviceStatus.fan !== true) {
-            deviceStatus.fan = true
-            pub(FAN_CONTROL_TOPIC, deviceStatus.fan)
-            console.log('FAN ON : co2 <', thresholds.minCo2)
-        }
-    } else if (message.co2Level > thresholds.maxCo2) {
-        if (deviceStatus.fan !== false) {
-            deviceStatus.fan = false
-            pub(FAN_CONTROL_TOPIC, deviceStatus.fan)
-            console.log('FAN OFF : co2 >', thresholds.maxCo2)
+            console.log('LED ON : temp <', thresholds.minTemp)
         }
     }
 
     // Pump 제어 : 습도 기준 컨트롤
-    if (message.humidity < thresholds.minHumid) {
+    if (message.humidity > thresholds.maxHumid) {
+        if (deviceStatus.pump !== false) {
+            deviceStatus.pump = false
+            pub(PUMP_CONTROL_TOPIC, deviceStatus.pump)
+            console.log('PUMP OFF : humid >', thresholds.maxHumid)
+        }
+    } else if (message.humidity < thresholds.minHumid) {
         if (deviceStatus.pump !== true) {
             deviceStatus.pump = true
             pub(PUMP_CONTROL_TOPIC, deviceStatus.pump)
             console.log('PUMP ON : humid <', thresholds.minHumid)
         }
-    } else if (message.humidity > thresholds.maxHumid) {
-        if (deviceStatus.pump !== false) {
-            deviceStatus.pump = false
-            pub(PUMP_CONTROL_TOPIC, deviceStatus.pump)
-            console.log('PUMP OFF : humid >', thresholds.maxHumid)
+    }
+
+    // FAN 제어 : CO2 기준 컨트롤
+    if (message.co2Level > thresholds.maxCo2) {
+        if (deviceStatus.fan !== false) {
+            deviceStatus.fan = false
+            pub(FAN_CONTROL_TOPIC, deviceStatus.fan)
+            console.log('FAN OFF : co2 >', thresholds.maxCo2)
+        }
+    } else if (message.co2Level < thresholds.minCo2) {
+        if (deviceStatus.fan !== true) {
+            deviceStatus.fan = true
+            pub(FAN_CONTROL_TOPIC, deviceStatus.fan)
+            console.log('FAN ON : co2 <', thresholds.minCo2)
         }
     }
 })
@@ -147,10 +148,10 @@ setInterval(() => {
 }, 50000)
 
 // Control Pump with timer
-setInterval(() => {
-    deviceStatus.pump = !deviceStatus.pump
-    pub(PUMP_CONTROL_TOPIC, deviceStatus.pump)
-}, 10000)
+// setInterval(() => {
+//     deviceStatus.pump = !deviceStatus.pump
+//     pub(PUMP_CONTROL_TOPIC, deviceStatus.pump)
+// }, 10000)
 
 router.match(IO_TOPIC, deviceStateSchema, (message) => {
     console.log('\nvalid IO Data:', message)
