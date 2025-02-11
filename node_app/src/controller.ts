@@ -9,8 +9,26 @@ import {
     LED_CONTROL_TOPIC,
     PUMP_CONTROL_TOPIC,
     SENSOR_TOPIC,
+    THRESHOLD_TOPIC,
+    thresholdSchema,
 } from './common'
 import { MqttRouter } from './mqtt-router'
+import { deviceState } from './common'
+
+const deviceStatus: deviceState = {
+    led: false,
+    fan: false,
+    pump: false,
+}
+
+const threshold = {
+    maxTemp: 25,
+    minTemp: 18,
+    maxHumid: 80,
+    minHumid: 40,
+    maxCo2: 600,
+    minCo2: 400,
+}
 
 dotenv.config()
 
@@ -24,12 +42,12 @@ const client = mqtt.connect(brokerUrl)
 client.on('connect', () => {
     console.log('\nSubscriber connected to nanoMQ')
 
-    client.subscribe(DATA_TOPIC, (err) => {
+    client.subscribe([DATA_TOPIC, THRESHOLD_TOPIC], (err) => {
         if (err) {
             console.error('Subscribe error:', err)
             return
         }
-        console.log(`Subscribed to ${DATA_TOPIC}`)
+        console.log(`Subscribed to ${DATA_TOPIC} and ${THRESHOLD_TOPIC}`)
     })
 })
 
@@ -39,18 +57,98 @@ function pub(topic: string, message: unknown) {
 
 const router = new MqttRouter()
 
+// handler 함수 설명 필요.
+router.match(THRESHOLD_TOPIC, thresholdSchema, (message, topic, param) => {
+    const key = param
+    if (!key) return
+
+    switch (key) {
+        case 'maxTemp':
+            threshold.maxTemp = message.threshold
+            console.log('Max Temp Threshold:', message)
+            break
+        case 'minTemp':
+            threshold.minTemp = message.threshold
+            console.log('Min Temp Threshold:', message)
+            break
+        case 'maxHumid':
+            threshold.maxHumid = message.threshold
+            console.log('Max Humidity Threshold:', message)
+            break
+        case 'minHumid':
+            threshold.minHumid = message.threshold
+            console.log('Min Humidity Threshold:', message)
+            break
+        case 'maxCo2':
+            threshold.maxCo2 = message.threshold
+            console.log('Max CO2 Threshold:', message)
+            break
+        case 'minCo2':
+            threshold.minCo2 = message.threshold
+            console.log('Min CO2 Threshold:', message)
+            break
+    }
+})
+
+// Control devices based on sensor data
 router.match(SENSOR_TOPIC, airfarmDataSchema, (message) => {
     console.log('\nvalid SENSOR Data:', message)
 
-    const isFanOn = message.temperature > 25
-    pub(FAN_CONTROL_TOPIC, isFanOn)
+    // LED 제어 : 온도 기준 컨트롤
+    if (message.temperature > threshold.maxTemp) {
+        if (deviceStatus.led !== false) {
+            deviceStatus.led = false
+            pub(LED_CONTROL_TOPIC, deviceStatus.led)
+            console.log('LED OFF : temp >=', threshold.maxTemp)
+        }
+    } else if (message.temperature < threshold.minTemp) {
+        if (deviceStatus.led !== true) {
+            deviceStatus.led = true
+            pub(LED_CONTROL_TOPIC, deviceStatus.led)
+            console.log('LED ON : temp <=', threshold.minTemp)
+        }
+    }
 
-    const isPumpOn = message.humidity < 40
-    pub(PUMP_CONTROL_TOPIC, isPumpOn)
+    // FAN 제어 : CO2 기준 컨트롤
+    if (message.co2Level < threshold.minCo2) {
+        if (deviceStatus.fan !== true) {
+            deviceStatus.fan = true
+            pub(FAN_CONTROL_TOPIC, deviceStatus.fan)
+            console.log('FAN ON : co2 <', threshold.minCo2)
+        }
+    } else if (message.co2Level > threshold.maxCo2) {
+        if (deviceStatus.fan !== false) {
+            deviceStatus.fan = false
+            pub(FAN_CONTROL_TOPIC, deviceStatus.fan)
+            console.log('FAN OFF : co2 >', threshold.maxCo2)
+        }
+    }
 
-    const isLedOn = message.co2Level > 800
-    pub(LED_CONTROL_TOPIC, isLedOn)
+    // Pump 제어 : 습도 기준 컨트롤
+    if (message.humidity < threshold.minHumid) {
+        if (deviceStatus.pump !== true) {
+            deviceStatus.pump = true
+            pub(PUMP_CONTROL_TOPIC, deviceStatus.pump)
+            console.log('PUMP ON : humid <', threshold.minHumid)
+        }
+    } else if (message.humidity > threshold.maxHumid) {
+        if (deviceStatus.pump !== false) {
+            deviceStatus.pump = false
+            pub(PUMP_CONTROL_TOPIC, deviceStatus.pump)
+            console.log('PUMP OFF : humid >', threshold.maxHumid)
+        }
+    }
 })
+
+// Control LED with timer (낮 5초, 밤 5초)
+setInterval(() => {
+    deviceStatus.led = !deviceStatus.led
+}, 50000)
+
+// Control Pump with timer
+setInterval(() => {
+    deviceStatus.pump = !deviceStatus.pump
+}, 10000)
 
 router.match(IO_TOPIC, deviceStateSchema, (message) => {
     console.log('\nvalid IO Data:', message)

@@ -1,7 +1,6 @@
 import mqtt from 'mqtt'
 import dotenv from 'dotenv'
-import { set, z } from 'zod'
-import { faker } from '@faker-js/faker'
+import { z } from 'zod'
 import {
     airfarmData,
     deviceState,
@@ -36,15 +35,6 @@ function pub(topic: string, message: unknown) {
     Not using dummy data. I want to make the more logical data.
 */
 
-// function generateDummyData(): AirfarmData {
-//     return {
-//         temperature: parseFloat(faker.number.float({ min: 15, max: 30 }).toFixed(1)),
-//         humidity: faker.number.int({ min: 30, max: 70 }),
-//         co2Level: faker.number.int({ min: 300, max: 1000 }),
-//         timestamp: faker.date.recent().toISOString(),
-//     }
-// }
-
 let airfarmData = {
     temperature: 25, // 25 degree celsius
     humidity: 60, // 60% humidity
@@ -52,6 +42,7 @@ let airfarmData = {
     timestamp: new Date().toISOString(),
 }
 
+// 잠만 이거 왜 필요하지
 function initialSensorData() {
     return airfarmData
 }
@@ -79,9 +70,9 @@ function updateState() {
 
     // Fan 효과
     if (deviceStatus.fan) {
-        // airfarmData.temperature -= 0.1 // Fan 작동으로 열이 빠져나감
+        airfarmData.temperature -= 0.1 // Fan 작동으로 열이 빠져나감
         airfarmData.co2Level += 10 // 환기로 외부의 co2 유입되어 co2 농도 상승
-        airfarmData.humidity -= 0.1 // Fan 작동으로 습도 감소
+        // airfarmData.humidity -= 0.1 // Fan 작동으로 습도 감소
     }
 
     // Pump 효과
@@ -90,7 +81,7 @@ function updateState() {
     }
 }
 
-setInterval(updateState, 1000)
+setInterval(updateState, 2000)
 
 // Handle incoming messages
 client.on('message', (topic, message) => {
