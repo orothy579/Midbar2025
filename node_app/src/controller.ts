@@ -14,6 +14,7 @@ import {
 } from './common'
 import { MqttRouter } from './mqtt-router'
 import { deviceState } from './common'
+import { z } from 'zod'
 
 const deviceStatus: deviceState = {
     led: false,
@@ -57,37 +58,17 @@ function pub(topic: string, message: unknown) {
 
 const router = new MqttRouter()
 
+const thresholdConfigSchema = z.object({
+    maxTemp: z.number(),
+    minTemp: z.number(),
+    maxHumid: z.number(),
+    minHumid: z.number(),
+    maxCo2: z.number(),
+    minCo2: z.number(),
+})
 // handler 함수 설명 필요.
-router.match(THRESHOLD_TOPIC, thresholdSchema, (message, topic, param) => {
-    const key = param
-    if (!key) return
-
-    switch (key) {
-        case 'maxTemp':
-            thresholds.maxTemp = message
-            console.log('Max Temp Threshold:', message)
-            break
-        case 'minTemp':
-            thresholds.minTemp = message
-            console.log('Min Temp Threshold:', message)
-            break
-        case 'maxHumid':
-            thresholds.maxHumid = message
-            console.log('Max Humidity Threshold:', message)
-            break
-        case 'minHumid':
-            thresholds.minHumid = message
-            console.log('Min Humidity Threshold:', message)
-            break
-        case 'maxCo2':
-            thresholds.maxCo2 = message
-            console.log('Max CO2 Threshold:', message)
-            break
-        case 'minCo2':
-            thresholds.minCo2 = message
-            console.log('Min CO2 Threshold:', message)
-            break
-    }
+router.match('airfarm/threshold/set', thresholdConfigSchema.partial(), (message, topic, param) => {
+    Object.assign(thresholds, message)
 })
 
 // Control devices based on sensor data
