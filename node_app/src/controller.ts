@@ -21,7 +21,7 @@ const deviceStatus: deviceState = {
     pump: false,
 }
 
-const threshold = {
+const thresholds = {
     maxTemp: 25,
     minTemp: 18,
     maxHumid: 80,
@@ -64,27 +64,27 @@ router.match(THRESHOLD_TOPIC, thresholdSchema, (message, topic, param) => {
 
     switch (key) {
         case 'maxTemp':
-            threshold.maxTemp = message.threshold
+            thresholds.maxTemp = message
             console.log('Max Temp Threshold:', message)
             break
         case 'minTemp':
-            threshold.minTemp = message.threshold
+            thresholds.minTemp = message
             console.log('Min Temp Threshold:', message)
             break
         case 'maxHumid':
-            threshold.maxHumid = message.threshold
+            thresholds.maxHumid = message
             console.log('Max Humidity Threshold:', message)
             break
         case 'minHumid':
-            threshold.minHumid = message.threshold
+            thresholds.minHumid = message
             console.log('Min Humidity Threshold:', message)
             break
         case 'maxCo2':
-            threshold.maxCo2 = message.threshold
+            thresholds.maxCo2 = message
             console.log('Max CO2 Threshold:', message)
             break
         case 'minCo2':
-            threshold.minCo2 = message.threshold
+            thresholds.minCo2 = message
             console.log('Min CO2 Threshold:', message)
             break
     }
@@ -95,59 +95,61 @@ router.match(SENSOR_TOPIC, airfarmDataSchema, (message) => {
     console.log('\nvalid SENSOR Data:', message)
 
     // LED 제어 : 온도 기준 컨트롤
-    if (message.temperature > threshold.maxTemp) {
+    if (message.temperature > thresholds.maxTemp) {
         if (deviceStatus.led !== false) {
             deviceStatus.led = false
             pub(LED_CONTROL_TOPIC, deviceStatus.led)
-            console.log('LED OFF : temp >=', threshold.maxTemp)
+            console.log('LED OFF : temp >=', thresholds.maxTemp)
         }
-    } else if (message.temperature < threshold.minTemp) {
+    } else if (message.temperature < thresholds.minTemp) {
         if (deviceStatus.led !== true) {
             deviceStatus.led = true
             pub(LED_CONTROL_TOPIC, deviceStatus.led)
-            console.log('LED ON : temp <=', threshold.minTemp)
+            console.log('LED ON : temp <=', thresholds.minTemp)
         }
     }
 
     // FAN 제어 : CO2 기준 컨트롤
-    if (message.co2Level < threshold.minCo2) {
+    if (message.co2Level < thresholds.minCo2) {
         if (deviceStatus.fan !== true) {
             deviceStatus.fan = true
             pub(FAN_CONTROL_TOPIC, deviceStatus.fan)
-            console.log('FAN ON : co2 <', threshold.minCo2)
+            console.log('FAN ON : co2 <', thresholds.minCo2)
         }
-    } else if (message.co2Level > threshold.maxCo2) {
+    } else if (message.co2Level > thresholds.maxCo2) {
         if (deviceStatus.fan !== false) {
             deviceStatus.fan = false
             pub(FAN_CONTROL_TOPIC, deviceStatus.fan)
-            console.log('FAN OFF : co2 >', threshold.maxCo2)
+            console.log('FAN OFF : co2 >', thresholds.maxCo2)
         }
     }
 
     // Pump 제어 : 습도 기준 컨트롤
-    if (message.humidity < threshold.minHumid) {
+    if (message.humidity < thresholds.minHumid) {
         if (deviceStatus.pump !== true) {
             deviceStatus.pump = true
             pub(PUMP_CONTROL_TOPIC, deviceStatus.pump)
-            console.log('PUMP ON : humid <', threshold.minHumid)
+            console.log('PUMP ON : humid <', thresholds.minHumid)
         }
-    } else if (message.humidity > threshold.maxHumid) {
+    } else if (message.humidity > thresholds.maxHumid) {
         if (deviceStatus.pump !== false) {
             deviceStatus.pump = false
             pub(PUMP_CONTROL_TOPIC, deviceStatus.pump)
-            console.log('PUMP OFF : humid >', threshold.maxHumid)
+            console.log('PUMP OFF : humid >', thresholds.maxHumid)
         }
     }
 })
 
-// Control LED with timer (낮 5초, 밤 5초)
+// Control LED with timer [ 이전 상황을 고려하지 않고, 시간에 따라 무조건 바꿈. --> 수정 필요 ]
 setInterval(() => {
     deviceStatus.led = !deviceStatus.led
+    pub(LED_CONTROL_TOPIC, deviceStatus.led)
 }, 50000)
 
 // Control Pump with timer
 setInterval(() => {
     deviceStatus.pump = !deviceStatus.pump
+    pub(PUMP_CONTROL_TOPIC, deviceStatus.pump)
 }, 10000)
 
 router.match(IO_TOPIC, deviceStateSchema, (message) => {

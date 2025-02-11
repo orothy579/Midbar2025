@@ -2,8 +2,8 @@ import mqtt from 'mqtt'
 import dotenv from 'dotenv'
 import { z } from 'zod'
 import {
-    airfarmData,
     deviceState,
+    CONTROL_TOPIC,
     FAN_CONTROL_TOPIC,
     LED_CONTROL_TOPIC,
     PUMP_CONTROL_TOPIC,
@@ -31,10 +31,6 @@ function pub(topic: string, message: unknown) {
     client.publish(topic, JSON.stringify(message))
 }
 
-/*
-    Not using dummy data. I want to make the more logical data.
-*/
-
 let airfarmData = {
     temperature: 25, // 25 degree celsius
     humidity: 60, // 60% humidity
@@ -42,18 +38,18 @@ let airfarmData = {
     timestamp: new Date().toISOString(),
 }
 
-// 잠만 이거 왜 필요하지
-function initialSensorData() {
+function sensorData() {
+    airfarmData.timestamp = new Date().toISOString()
     return airfarmData
 }
 
 // Connect to the broker
 client.on('connect', () => {
     console.log('Publisher connected')
-    client.subscribe('airfarm/control/+')
+    client.subscribe(CONTROL_TOPIC)
 
     setInterval(() => {
-        const payload = initialSensorData()
+        const payload = sensorData()
         pub(SENSOR_TOPIC, payload)
         pub(IO_TOPIC, deviceStatus) // publish current device status
     }, 10000)
@@ -63,21 +59,24 @@ function updateState() {
     // LED 효과
     if (deviceStatus.led) {
         airfarmData.temperature += 0.1 // LED 작동으로 발생하는 열
-        airfarmData.co2Level -= 5 // LED 작동으로 광합성 -> co2 농도 감소
+        // airfarmData.co2Level -= 5 // LED 작동으로 광합성 -> co2 농도 감소
     } else {
         airfarmData.temperature -= 0.05 // LED가 꺼져있으면 온도가 서서히 떨어짐
     }
 
     // Fan 효과
     if (deviceStatus.fan) {
-        airfarmData.temperature -= 0.1 // Fan 작동으로 열이 빠져나감
         airfarmData.co2Level += 10 // 환기로 외부의 co2 유입되어 co2 농도 상승
-        // airfarmData.humidity -= 0.1 // Fan 작동으로 습도 감소
+        // airfarmData.humidity -= 0.2 // 환기로 습도 감소
+    } else {
+        airfarmData.co2Level -= 5 // 환기가 꺼져있으면 co2 농도 감소
     }
 
     // Pump 효과
     if (deviceStatus.pump) {
         airfarmData.humidity += 0.2 // pump 작동으로 습도 상승
+    } else {
+        airfarmData.humidity -= 0.1 // pump 꺼져있으면 습도 하락
     }
 }
 

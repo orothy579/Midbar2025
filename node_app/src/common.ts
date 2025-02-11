@@ -3,6 +3,8 @@ import { z } from 'zod'
 export const DATA_TOPIC = 'airfarm/+/data'
 export const SENSOR_TOPIC = 'airfarm/sensors/data'
 export const IO_TOPIC = 'airfarm/io/data'
+
+export const CONTROL_TOPIC = 'airfarm/control/+'
 export const FAN_CONTROL_TOPIC = 'airfarm/control/fan'
 export const PUMP_CONTROL_TOPIC = 'airfarm/control/pump'
 export const LED_CONTROL_TOPIC = 'airfarm/control/led'
@@ -31,7 +33,5 @@ export const deviceStateSchema = z.object({
 })
 export type deviceState = z.infer<typeof deviceStateSchema>
 
-export const thresholdSchema = z.object({
-    threshold: z.number(),
-})
+export const thresholdSchema = z.number()
 export type threshold = z.infer<typeof thresholdSchema>
