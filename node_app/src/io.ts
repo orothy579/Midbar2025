@@ -55,38 +55,13 @@ client.on('connect', () => {
     }, 3000)
 })
 
-// Handle incoming messages
-client.on('message', (topic, message) => {
-    try {
-        router.handle(topic, message)
-    } catch (err) {
-        console.error('Router handling error:', err)
-    }
-})
-
 router.match(CONTROL_TOPIC, deviceStateSchema.partial(), (message, topic, param) => {
     Object.assign(deviceStatus, message)
     console.log('\nDevice status updated:', deviceStatus)
     pub(IO_TOPIC, deviceStatus)
 })
 
-// client.on('message', (topic, message) => {
-//     const payload = JSON.parse(message.toString())
-
-//     console.log('Received control message:', topic, payload)
-
-//     if (topic === FAN_CONTROL_TOPIC) {
-//         deviceStatus.fan = z.boolean().parse(payload)
-//     }
-//     if (topic === LED_CONTROL_TOPIC) {
-//         deviceStatus.led = z.boolean().parse(payload)
-//     }
-//     if (topic === PUMP_CONTROL_TOPIC) {
-//         deviceStatus.pump = z.boolean().parse(payload)
-//     }
-
-//     pub(IO_TOPIC, deviceStatus)
-// })
+pub(IO_TOPIC, deviceStatus)
 
 function updateState() {
     // LED 효과
@@ -115,24 +90,14 @@ function updateState() {
 
 setInterval(updateState, 2000)
 
-// Handle incoming messages ==> router.match 함수 사용해서 수정하기
-// client.on('message', (topic, message) => {
-//     const payload = JSON.parse(message.toString())
-
-//     console.log('Received control message:', topic, payload)
-
-//     if (topic === FAN_CONTROL_TOPIC) {
-//         deviceStatus.fan = z.boolean().parse(payload)
-//     }
-//     if (topic === LED_CONTROL_TOPIC) {
-//         deviceStatus.led = z.boolean().parse(payload)
-//     }
-//     if (topic === PUMP_CONTROL_TOPIC) {
-//         deviceStatus.pump = z.boolean().parse(payload)
-//     }
-
-//     pub(IO_TOPIC, deviceStatus)
-// })
+// Handle incoming messages
+client.on('message', (topic, message) => {
+    try {
+        router.handle(topic, message)
+    } catch (err) {
+        console.error('Router handling error:', err)
+    }
+})
 
 client.on('error', (err) => {
     console.error('Publish error : ', err)

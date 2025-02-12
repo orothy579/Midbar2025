@@ -109,6 +109,7 @@ router.match(IO_TOPIC, deviceStateSchema, (message) => {
     console.log('\nvalid IO Data:', message)
 })
 
+// 여기도 있구나
 client.on('message', (topic, message) => {
     try {
         router.handle(topic, message)
