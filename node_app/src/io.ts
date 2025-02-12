@@ -4,6 +4,7 @@ import { CONTROL_TOPIC, deviceStateSchema, SENSOR_TOPIC, IO_TOPIC } from './comm
 
 import { MqttRouter } from './mqtt-router'
 
+// 환경 변수 로드
 dotenv.config()
 
 const brokerUrl = process.env.BROKER_URL
@@ -11,8 +12,6 @@ const brokerUrl = process.env.BROKER_URL
 if (!brokerUrl) {
     throw new Error('BROKER_URL is required')
 }
-
-const client = mqtt.connect(brokerUrl)
 
 const deviceStatus = {
     led: false,
@@ -27,6 +26,7 @@ let airfarmData = {
     timestamp: new Date(),
 }
 
+// airfarmData에 현재 시간을 업데이트한 후 반환
 function sensorData() {
     airfarmData.timestamp = new Date()
     return airfarmData
@@ -36,9 +36,9 @@ function pub(topic: string, message: unknown) {
     client.publish(topic, JSON.stringify(message))
 }
 
-const router = new MqttRouter()
+const client = mqtt.connect(brokerUrl)
 
-// Connect to the broker
+// 브로커에 연결
 client.on('connect', () => {
     client.subscribe(CONTROL_TOPIC, (err) => {
         if (err) {
@@ -55,13 +55,28 @@ client.on('connect', () => {
     }, 3000)
 })
 
+// Handle incoming messages
+client.on('message', (topic, message) => {
+    try {
+        // 토픽에 맞는 핸들러 호출
+        router.handle(topic, message)
+    } catch (err) {
+        console.error('Router handling error:', err)
+    }
+})
+
+client.on('error', (err) => {
+    console.error('Publish error : ', err)
+})
+
+const router = new MqttRouter()
+
 router.match(CONTROL_TOPIC, deviceStateSchema.partial(), (message, topic, param) => {
+    // CONTROL_TOPIC에 대한 handler 함수
     Object.assign(deviceStatus, message)
     console.log('\nDevice status updated:', deviceStatus)
     pub(IO_TOPIC, deviceStatus)
 })
-
-pub(IO_TOPIC, deviceStatus)
 
 function updateState() {
     // LED 효과
@@ -89,16 +104,3 @@ function updateState() {
 }
 
 setInterval(updateState, 2000)
-
-// Handle incoming messages
-client.on('message', (topic, message) => {
-    try {
-        router.handle(topic, message)
-    } catch (err) {
-        console.error('Router handling error:', err)
-    }
-})
-
-client.on('error', (err) => {
-    console.error('Publish error : ', err)
-})

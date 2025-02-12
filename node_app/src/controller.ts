@@ -23,6 +23,10 @@ const thresholds = {
 
 dotenv.config()
 
+function pub(topic: string, message: unknown) {
+    client.publish(topic, JSON.stringify(message))
+}
+
 const brokerUrl = process.env.BROKER_URL
 if (!brokerUrl) {
     throw new Error('BROKER_URL is required')
@@ -42,17 +46,19 @@ client.on('connect', () => {
     })
 })
 
-function pub(topic: string, message: unknown) {
-    client.publish(topic, JSON.stringify(message))
-}
+client.on('message', (topic, message) => {
+    try {
+        router.handle(topic, message)
+    } catch (err) {
+        console.error('data parse error:', err)
+    }
+})
+
+client.on('error', (err) => {
+    console.error('Subscriber error:', err)
+})
 
 const router = new MqttRouter()
-
-// Update threshold values
-router.match(THRESHOLD_TOPIC, thresholdConfigSchema.partial(), (message, topic, param) => {
-    Object.assign(thresholds, message)
-    console.log('\nThresholds updated:', thresholds)
-})
 
 // Control devices based on sensor data
 router.match(SENSOR_TOPIC, airfarmDataSchema, (message) => {
@@ -92,6 +98,16 @@ router.match(SENSOR_TOPIC, airfarmDataSchema, (message) => {
     pub(CONTROL_TOPIC, controlCmd)
 })
 
+router.match(IO_TOPIC, deviceStateSchema, (message) => {
+    console.log('\nvalid IO Data:', message)
+})
+
+// Update threshold values
+router.match(THRESHOLD_TOPIC, thresholdConfigSchema.partial(), (message, topic, param) => {
+    Object.assign(thresholds, message)
+    console.log('\nThresholds updated:', thresholds)
+})
+
 // Control LED with timer [ 이전 상황을 고려하지 않고, 시간에 따라 무조건 바꿈. --> 수정 필요 ]
 // setInterval(() => {
 //     deviceStatus.led = !deviceStatus.led
@@ -104,20 +120,3 @@ router.match(SENSOR_TOPIC, airfarmDataSchema, (message) => {
 //     deviceStatus.pump = !deviceStatus.pump
 //     pub(PUMP_CONTROL_TOPIC, deviceStatus.pump)
 // }, 10000)
-
-router.match(IO_TOPIC, deviceStateSchema, (message) => {
-    console.log('\nvalid IO Data:', message)
-})
-
-// 여기도 있구나
-client.on('message', (topic, message) => {
-    try {
-        router.handle(topic, message)
-    } catch (err) {
-        console.error('data parse error:', err)
-    }
-})
-
-client.on('error', (err) => {
-    console.error('Subscriber error:', err)
-})
