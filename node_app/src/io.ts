@@ -53,7 +53,7 @@ client.on('connect', () => {
         const payload = sensorData()
         pub(SENSOR_TOPIC, payload)
         pub(IO_TOPIC, deviceStatus) // publish current device status
-    }, 10000)
+    }, 5000)
 })
 
 function updateState() {

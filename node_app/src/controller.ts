@@ -10,7 +10,7 @@ import {
     PUMP_CONTROL_TOPIC,
     SENSOR_TOPIC,
     THRESHOLD_TOPIC,
-    thresholdSchema,
+    thresholdConfigSchema,
 } from './common'
 import { MqttRouter } from './mqtt-router'
 import { deviceState } from './common'
@@ -26,7 +26,7 @@ const thresholds = {
     maxTemp: 25,
     minTemp: 18,
     maxHumid: 80,
-    minHumid: 40,
+    minHumid: 75,
     maxCo2: 600,
     minCo2: 400,
 }
@@ -58,18 +58,10 @@ function pub(topic: string, message: unknown) {
 
 const router = new MqttRouter()
 
-const thresholdConfigSchema = z.object({
-    maxTemp: z.number(),
-    minTemp: z.number(),
-    maxHumid: z.number(),
-    minHumid: z.number(),
-    maxCo2: z.number(),
-    minCo2: z.number(),
-})
-
-// 조금 더 알아볼 필요 있다.
-router.match('airfarm/threshold/set', thresholdConfigSchema.partial(), (message, topic, param) => {
+// Update threshold values
+router.match(THRESHOLD_TOPIC, thresholdConfigSchema.partial(), (message, topic, param) => {
     Object.assign(thresholds, message)
+    console.log('\nThresholds updated:', thresholds)
 })
 
 // Control devices based on sensor data
@@ -79,13 +71,13 @@ router.match(SENSOR_TOPIC, airfarmDataSchema, (message) => {
     console.log('Current Thresholds:', thresholds)
     // LED 제어 : 온도 기준 컨트롤
     if (message.temperature > thresholds.maxTemp) {
-        if (deviceStatus.led !== false) {
+        if (deviceStatus.led != false) {
             deviceStatus.led = false
             pub(LED_CONTROL_TOPIC, deviceStatus.led)
             console.log('LED OFF : temp >', thresholds.maxTemp)
         }
     } else if (message.temperature < thresholds.minTemp) {
-        if (deviceStatus.led !== true) {
+        if (deviceStatus.led != true) {
             deviceStatus.led = true
             pub(LED_CONTROL_TOPIC, deviceStatus.led)
             console.log('LED ON : temp <', thresholds.minTemp)
@@ -94,13 +86,13 @@ router.match(SENSOR_TOPIC, airfarmDataSchema, (message) => {
 
     // Pump 제어 : 습도 기준 컨트롤
     if (message.humidity > thresholds.maxHumid) {
-        if (deviceStatus.pump !== false) {
+        if (deviceStatus.pump != false) {
             deviceStatus.pump = false
             pub(PUMP_CONTROL_TOPIC, deviceStatus.pump)
             console.log('PUMP OFF : humid >', thresholds.maxHumid)
         }
     } else if (message.humidity < thresholds.minHumid) {
-        if (deviceStatus.pump !== true) {
+        if (deviceStatus.pump != true) {
             deviceStatus.pump = true
             pub(PUMP_CONTROL_TOPIC, deviceStatus.pump)
             console.log('PUMP ON : humid <', thresholds.minHumid)
@@ -109,13 +101,13 @@ router.match(SENSOR_TOPIC, airfarmDataSchema, (message) => {
 
     // FAN 제어 : CO2 기준 컨트롤
     if (message.co2Level > thresholds.maxCo2) {
-        if (deviceStatus.fan !== false) {
+        if (deviceStatus.fan != false) {
             deviceStatus.fan = false
             pub(FAN_CONTROL_TOPIC, deviceStatus.fan)
             console.log('FAN OFF : co2 >', thresholds.maxCo2)
         }
     } else if (message.co2Level < thresholds.minCo2) {
-        if (deviceStatus.fan !== true) {
+        if (deviceStatus.fan != true) {
             deviceStatus.fan = true
             pub(FAN_CONTROL_TOPIC, deviceStatus.fan)
             console.log('FAN ON : co2 <', thresholds.minCo2)
