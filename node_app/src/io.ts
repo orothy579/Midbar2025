@@ -25,10 +25,10 @@ if (!brokerUrl) {
 const client = mqtt.connect(brokerUrl)
 
 // device status  controller.ts 와 동기화 하기
-const deviceStatus: deviceState = {
+const deviceStatus = {
+    led: false,
     fan: false,
     pump: false,
-    led: false,
 }
 
 function pub(topic: string, message: unknown) {
@@ -47,17 +47,57 @@ function sensorData() {
     return airfarmData
 }
 
+const router = new MqttRouter()
+
 // Connect to the broker
 client.on('connect', () => {
-    console.log('Publisher connected')
-    client.subscribe(CONTROL_TOPIC)
+    client.subscribe(CONTROL_TOPIC, (err) => {
+        if (err) {
+            console.error('Subscribe error:', err)
+            return
+        }
+        console.log(`Subscribed to ${CONTROL_TOPIC}`)
+    })
 
     setInterval(() => {
         const payload = sensorData()
         pub(SENSOR_TOPIC, payload)
         pub(IO_TOPIC, deviceStatus) // publish current device status
-    }, 5000)
+    }, 3000)
 })
+
+// Handle incoming messages
+client.on('message', (topic, message) => {
+    try {
+        router.handle(topic, message)
+    } catch (err) {
+        console.error('Router handling error:', err)
+    }
+})
+
+router.match(CONTROL_TOPIC, deviceStateSchema.partial(), (message, topic, param) => {
+    Object.assign(deviceStatus, message)
+    console.log('\nDevice status updated:', deviceStatus)
+    pub(IO_TOPIC, deviceStatus)
+})
+
+// client.on('message', (topic, message) => {
+//     const payload = JSON.parse(message.toString())
+
+//     console.log('Received control message:', topic, payload)
+
+//     if (topic === FAN_CONTROL_TOPIC) {
+//         deviceStatus.fan = z.boolean().parse(payload)
+//     }
+//     if (topic === LED_CONTROL_TOPIC) {
+//         deviceStatus.led = z.boolean().parse(payload)
+//     }
+//     if (topic === PUMP_CONTROL_TOPIC) {
+//         deviceStatus.pump = z.boolean().parse(payload)
+//     }
+
+//     pub(IO_TOPIC, deviceStatus)
+// })
 
 function updateState() {
     // LED 효과
@@ -104,14 +144,6 @@ setInterval(updateState, 2000)
 
 //     pub(IO_TOPIC, deviceStatus)
 // })
-
-const router = new MqttRouter()
-
-router.match(CONTROL_TOPIC, deviceStateSchema.partial(), (message) => {
-    Object.assign(deviceStatus, message)
-    console.log('\nDevice status updated:', deviceStatus)
-    pub(IO_TOPIC, deviceStatus)
-})
 
 client.on('error', (err) => {
     console.error('Publish error : ', err)
