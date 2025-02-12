@@ -2,12 +2,10 @@ import mqtt from 'mqtt'
 import dotenv from 'dotenv'
 import {
     airfarmDataSchema,
+    CONTROL_TOPIC,
     DATA_TOPIC,
     deviceStateSchema,
-    FAN_CONTROL_TOPIC,
     IO_TOPIC,
-    LED_CONTROL_TOPIC,
-    PUMP_CONTROL_TOPIC,
     SENSOR_TOPIC,
     THRESHOLD_TOPIC,
     thresholdConfigSchema,
@@ -61,32 +59,37 @@ router.match(SENSOR_TOPIC, airfarmDataSchema, (message) => {
     console.log('\nvalid SENSOR Data:', message)
 
     console.log('Current Thresholds:', thresholds)
+
+    // 이게 뭔지 알아볼 필요 있음
+    const controlCmd: Partial<{ led: boolean; pump: boolean; fan: boolean }> = {}
+
     // LED 제어 : 온도 기준 컨트롤
     if (message.temperature > thresholds.maxTemp) {
-        pub(LED_CONTROL_TOPIC, false)
+        controlCmd.led = false
         console.log('LED OFF : temp >', thresholds.maxTemp)
     } else if (message.temperature < thresholds.minTemp) {
-        pub(LED_CONTROL_TOPIC, true)
+        controlCmd.led = true
         console.log('LED ON : temp <', thresholds.minTemp)
     }
 
     // Pump 제어 : 습도 기준 컨트롤
     if (message.humidity > thresholds.maxHumid) {
-        pub(PUMP_CONTROL_TOPIC, false)
+        controlCmd.pump = false
         console.log('PUMP OFF : humid >', thresholds.maxHumid)
     } else if (message.humidity < thresholds.minHumid) {
-        pub(PUMP_CONTROL_TOPIC, true)
+        controlCmd.pump = true
         console.log('PUMP ON : humid <', thresholds.minHumid)
     }
 
     // FAN 제어 : CO2 기준 컨트롤
     if (message.co2Level > thresholds.maxCo2) {
-        pub(FAN_CONTROL_TOPIC, false)
+        controlCmd.fan = false
         console.log('FAN OFF : co2 >', thresholds.maxCo2)
     } else if (message.co2Level < thresholds.minCo2) {
-        pub(FAN_CONTROL_TOPIC, true)
+        controlCmd.fan = true
         console.log('FAN ON : co2 <', thresholds.minCo2)
     }
+    pub(CONTROL_TOPIC, controlCmd)
 })
 
 // Control LED with timer [ 이전 상황을 고려하지 않고, 시간에 따라 무조건 바꿈. --> 수정 필요 ]

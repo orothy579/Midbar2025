@@ -1,16 +1,6 @@
 import mqtt from 'mqtt'
 import dotenv from 'dotenv'
-import { z } from 'zod'
-import {
-    deviceState,
-    CONTROL_TOPIC,
-    FAN_CONTROL_TOPIC,
-    LED_CONTROL_TOPIC,
-    PUMP_CONTROL_TOPIC,
-    deviceStateSchema,
-    SENSOR_TOPIC,
-    IO_TOPIC,
-} from './common'
+import { CONTROL_TOPIC, deviceStateSchema, SENSOR_TOPIC, IO_TOPIC } from './common'
 
 import { MqttRouter } from './mqtt-router'
 
@@ -24,15 +14,10 @@ if (!brokerUrl) {
 
 const client = mqtt.connect(brokerUrl)
 
-// device status  controller.ts 와 동기화 하기
 const deviceStatus = {
     led: false,
     fan: false,
     pump: false,
-}
-
-function pub(topic: string, message: unknown) {
-    client.publish(topic, JSON.stringify(message))
 }
 
 let airfarmData = {
@@ -45,6 +30,10 @@ let airfarmData = {
 function sensorData() {
     airfarmData.timestamp = new Date()
     return airfarmData
+}
+
+function pub(topic: string, message: unknown) {
+    client.publish(topic, JSON.stringify(message))
 }
 
 const router = new MqttRouter()

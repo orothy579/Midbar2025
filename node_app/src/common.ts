@@ -5,9 +5,6 @@ export const SENSOR_TOPIC = 'airfarm/sensors/data'
 export const IO_TOPIC = 'airfarm/io/data'
 
 export const CONTROL_TOPIC = 'airfarm/control'
-export const FAN_CONTROL_TOPIC = 'airfarm/control/fan'
-export const PUMP_CONTROL_TOPIC = 'airfarm/control/pump'
-export const LED_CONTROL_TOPIC = 'airfarm/control/led'
 
 export const THRESHOLD_TOPIC = 'airfarm/threshold'
 
@@ -18,14 +15,11 @@ export const airfarmDataSchema = z.object({
     timestamp: z.string().datetime(),
 })
 
-export type airfarmData = z.infer<typeof airfarmDataSchema>
-
 export const deviceStateSchema = z.object({
     led: z.boolean().optional(),
     fan: z.boolean().optional(),
     pump: z.boolean().optional(),
 })
-export type deviceState = z.infer<typeof deviceStateSchema>
 
 export const thresholdConfigSchema = z.object({
     maxTemp: z.number(),
