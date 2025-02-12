@@ -91,16 +91,15 @@ client.on('message', (topic, message) => {
 
     if (topic === FAN_CONTROL_TOPIC) {
         deviceStatus.fan = z.boolean().parse(payload)
-        pub(IO_TOPIC, deviceStatus)
     }
     if (topic === LED_CONTROL_TOPIC) {
         deviceStatus.led = z.boolean().parse(payload)
-        pub(IO_TOPIC, deviceStatus)
     }
     if (topic === PUMP_CONTROL_TOPIC) {
         deviceStatus.pump = z.boolean().parse(payload)
-        pub(IO_TOPIC, deviceStatus)
     }
+
+    pub(IO_TOPIC, deviceStatus)
 })
 
 client.on('error', (err) => {

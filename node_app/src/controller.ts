@@ -13,14 +13,6 @@ import {
     thresholdConfigSchema,
 } from './common'
 import { MqttRouter } from './mqtt-router'
-import { deviceState } from './common'
-import { z } from 'zod'
-
-const deviceStatus: deviceState = {
-    led: false,
-    fan: false,
-    pump: false,
-}
 
 const thresholds = {
     maxTemp: 25,
@@ -71,56 +63,39 @@ router.match(SENSOR_TOPIC, airfarmDataSchema, (message) => {
     console.log('Current Thresholds:', thresholds)
     // LED 제어 : 온도 기준 컨트롤
     if (message.temperature > thresholds.maxTemp) {
-        if (deviceStatus.led != false) {
-            deviceStatus.led = false
-            pub(LED_CONTROL_TOPIC, deviceStatus.led)
-            console.log('LED OFF : temp >', thresholds.maxTemp)
-        }
+        pub(LED_CONTROL_TOPIC, false)
+        console.log('LED OFF : temp >', thresholds.maxTemp)
     } else if (message.temperature < thresholds.minTemp) {
-        if (deviceStatus.led != true) {
-            deviceStatus.led = true
-            pub(LED_CONTROL_TOPIC, deviceStatus.led)
-            console.log('LED ON : temp <', thresholds.minTemp)
-        }
+        pub(LED_CONTROL_TOPIC, true)
+        console.log('LED ON : temp <', thresholds.minTemp)
     }
 
     // Pump 제어 : 습도 기준 컨트롤
     if (message.humidity > thresholds.maxHumid) {
-        if (deviceStatus.pump != false) {
-            deviceStatus.pump = false
-            pub(PUMP_CONTROL_TOPIC, deviceStatus.pump)
-            console.log('PUMP OFF : humid >', thresholds.maxHumid)
-        }
+        pub(PUMP_CONTROL_TOPIC, false)
+        console.log('PUMP OFF : humid >', thresholds.maxHumid)
     } else if (message.humidity < thresholds.minHumid) {
-        if (deviceStatus.pump != true) {
-            deviceStatus.pump = true
-            pub(PUMP_CONTROL_TOPIC, deviceStatus.pump)
-            console.log('PUMP ON : humid <', thresholds.minHumid)
-        }
+        pub(PUMP_CONTROL_TOPIC, true)
+        console.log('PUMP ON : humid <', thresholds.minHumid)
     }
 
     // FAN 제어 : CO2 기준 컨트롤
     if (message.co2Level > thresholds.maxCo2) {
-        if (deviceStatus.fan != false) {
-            deviceStatus.fan = false
-            pub(FAN_CONTROL_TOPIC, deviceStatus.fan)
-            console.log('FAN OFF : co2 >', thresholds.maxCo2)
-        }
+        pub(FAN_CONTROL_TOPIC, false)
+        console.log('FAN OFF : co2 >', thresholds.maxCo2)
     } else if (message.co2Level < thresholds.minCo2) {
-        if (deviceStatus.fan != true) {
-            deviceStatus.fan = true
-            pub(FAN_CONTROL_TOPIC, deviceStatus.fan)
-            console.log('FAN ON : co2 <', thresholds.minCo2)
-        }
+        pub(FAN_CONTROL_TOPIC, true)
+        console.log('FAN ON : co2 <', thresholds.minCo2)
     }
 })
 
 // Control LED with timer [ 이전 상황을 고려하지 않고, 시간에 따라 무조건 바꿈. --> 수정 필요 ]
-setInterval(() => {
-    deviceStatus.led = !deviceStatus.led
-    pub(LED_CONTROL_TOPIC, deviceStatus.led)
-}, 50000)
+// setInterval(() => {
+//     deviceStatus.led = !deviceStatus.led
+//     pub(LED_CONTROL_TOPIC, deviceStatus.led)
+// }, 50000)
 
+// task 개념 추가
 // Control Pump with timer
 // setInterval(() => {
 //     deviceStatus.pump = !deviceStatus.pump
