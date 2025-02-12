@@ -21,6 +21,7 @@ if (!brokerUrl) {
 
 const client = mqtt.connect(brokerUrl)
 
+// device status  controller.ts 와 동기화 하기
 const deviceStatus: deviceState = {
     fan: false,
     pump: false,
@@ -35,11 +36,11 @@ let airfarmData = {
     temperature: 25, // 25 degree celsius
     humidity: 60, // 60% humidity
     co2Level: 500, // 500 ppm
-    timestamp: new Date().toISOString(),
+    timestamp: new Date(),
 }
 
 function sensorData() {
-    airfarmData.timestamp = new Date().toISOString()
+    airfarmData.timestamp = new Date()
     return airfarmData
 }
 
@@ -82,7 +83,7 @@ function updateState() {
 
 setInterval(updateState, 2000)
 
-// Handle incoming messages
+// Handle incoming messages ==> router.match 함수 사용해서 수정하기
 client.on('message', (topic, message) => {
     const payload = JSON.parse(message.toString())
 

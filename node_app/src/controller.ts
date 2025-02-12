@@ -66,7 +66,8 @@ const thresholdConfigSchema = z.object({
     maxCo2: z.number(),
     minCo2: z.number(),
 })
-// handler 함수 설명 필요.
+
+// 조금 더 알아볼 필요 있다.
 router.match('airfarm/threshold/set', thresholdConfigSchema.partial(), (message, topic, param) => {
     Object.assign(thresholds, message)
 })
