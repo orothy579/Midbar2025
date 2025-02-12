@@ -4,7 +4,7 @@ export const DATA_TOPIC = 'airfarm/+/data'
 export const SENSOR_TOPIC = 'airfarm/sensors/data'
 export const IO_TOPIC = 'airfarm/io/data'
 
-export const CONTROL_TOPIC = 'airfarm/control/+'
+export const CONTROL_TOPIC = 'airfarm/control/'
 export const FAN_CONTROL_TOPIC = 'airfarm/control/fan'
 export const PUMP_CONTROL_TOPIC = 'airfarm/control/pump'
 export const LED_CONTROL_TOPIC = 'airfarm/control/led'

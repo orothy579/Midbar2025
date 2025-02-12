@@ -7,9 +7,12 @@ import {
     FAN_CONTROL_TOPIC,
     LED_CONTROL_TOPIC,
     PUMP_CONTROL_TOPIC,
+    deviceStateSchema,
     SENSOR_TOPIC,
     IO_TOPIC,
 } from './common'
+
+import { MqttRouter } from './mqtt-router'
 
 dotenv.config()
 
@@ -84,21 +87,29 @@ function updateState() {
 setInterval(updateState, 2000)
 
 // Handle incoming messages ==> router.match 함수 사용해서 수정하기
-client.on('message', (topic, message) => {
-    const payload = JSON.parse(message.toString())
+// client.on('message', (topic, message) => {
+//     const payload = JSON.parse(message.toString())
 
-    console.log('Received control message:', topic, payload)
+//     console.log('Received control message:', topic, payload)
 
-    if (topic === FAN_CONTROL_TOPIC) {
-        deviceStatus.fan = z.boolean().parse(payload)
-    }
-    if (topic === LED_CONTROL_TOPIC) {
-        deviceStatus.led = z.boolean().parse(payload)
-    }
-    if (topic === PUMP_CONTROL_TOPIC) {
-        deviceStatus.pump = z.boolean().parse(payload)
-    }
+//     if (topic === FAN_CONTROL_TOPIC) {
+//         deviceStatus.fan = z.boolean().parse(payload)
+//     }
+//     if (topic === LED_CONTROL_TOPIC) {
+//         deviceStatus.led = z.boolean().parse(payload)
+//     }
+//     if (topic === PUMP_CONTROL_TOPIC) {
+//         deviceStatus.pump = z.boolean().parse(payload)
+//     }
 
+//     pub(IO_TOPIC, deviceStatus)
+// })
+
+const router = new MqttRouter()
+
+router.match(CONTROL_TOPIC, deviceStateSchema.partial(), (message) => {
+    Object.assign(deviceStatus, message)
+    console.log('\nDevice status updated:', deviceStatus)
     pub(IO_TOPIC, deviceStatus)
 })
 
