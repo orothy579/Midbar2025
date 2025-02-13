@@ -80,33 +80,23 @@ router.match(SENSOR_TOPIC, airfarmDataSchema, (message) => {
 
     console.log('Current Thresholds:', thresholds)
 
-    // LED 제어 : 온도 기준 컨트롤
-    if (message.temperature > thresholds.maxTemp) {
-        deviceStatus.led = false
-        console.log('LED OFF : temp >', thresholds.maxTemp)
-    } else if (message.temperature < thresholds.minTemp) {
-        deviceStatus.led = true
-        console.log('LED ON : temp <', thresholds.minTemp)
-    }
-
-    // Pump 제어 : 습도 기준 컨트롤
-    if (message.humidity > thresholds.maxHumid) {
-        deviceStatus.pump = false
-        console.log('PUMP OFF : humid >', thresholds.maxHumid)
-    } else if (message.humidity < thresholds.minHumid) {
-        deviceStatus.pump = true
-        console.log('PUMP ON : humid <', thresholds.minHumid)
-    }
-
-    // FAN 제어 : CO2 기준 컨트롤
-    if (message.co2Level > thresholds.maxCo2) {
-        deviceStatus.fan = false
-        console.log('FAN OFF : co2 >', thresholds.maxCo2)
-    } else if (message.co2Level < thresholds.minCo2) {
+    // Fan 으로만 제어, Fan으로 온도, 습도, co2 제어.
+    if (
+        message.temperature > thresholds.maxTemp ||
+        message.humidity > thresholds.maxHumid ||
+        message.co2Level > thresholds.maxCo2 ||
+        message.temperature < thresholds.minTemp ||
+        message.humidity < thresholds.minHumid ||
+        message.co2Level < thresholds.minCo2
+    ) {
         deviceStatus.fan = true
-        console.log('FAN ON : co2 <', thresholds.minCo2)
+        console.log('FAN ON : out of threshold')
+        pub(CONTROL_TOPIC, deviceStatus)
+    } else {
+        deviceStatus.fan = false
+        console.log('FAN OFF : all values in threshold')
+        pub(CONTROL_TOPIC, deviceStatus)
     }
-    pub(CONTROL_TOPIC, deviceStatus)
 })
 
 router.match(IO_TOPIC, deviceStateSchema, (message) => {

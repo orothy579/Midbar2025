@@ -24,7 +24,7 @@ export const deviceStateSchema = z.object({
 export type deviceState = z.infer<typeof deviceStateSchema>
 
 export const deviceStatus: deviceState = {
-    led: false,
+    led: true,
     fan: false,
     pump: false,
 }

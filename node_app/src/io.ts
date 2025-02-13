@@ -20,6 +20,13 @@ let airfarmData = {
     timestamp: new Date(),
 }
 
+// 외기
+let outAirfarmData = {
+    temperature: 20,
+    humidity: 70,
+    co2Level: 500,
+}
+
 // airfarmData에 현재 시간을 업데이트한 후 반환
 function sensorData() {
     airfarmData.timestamp = new Date()
@@ -84,23 +91,34 @@ function updateState() {
     }
     // LED on 낮 (식물 광합성)
     if (deviceStatus.led && !deviceStatus.pump) {
-        airfarmData.temperature += 0.1 // LED 작동으로 발생하는 열
-        airfarmData.humidity -= 2 // 온도 상승으로 인한 상대 습도 감소
-        airfarmData.co2Level -= 5 // 광합성으로 인한 co2 농도 감소
+        airfarmData.temperature += 1 // LED 작동으로 발생하는 열
+        airfarmData.humidity -= 1 // 온도 상승으로 인한 상대 습도 감소
+        airfarmData.co2Level -= 10 // 광합성으로 인한 co2 농도 감소
     }
 
     if (deviceStatus.led && deviceStatus.pump) {
-        airfarmData.temperature += 0.1 // LED 작동으로 발생하는 열
+        airfarmData.temperature += 1 // LED 작동으로 발생하는 열
         airfarmData.humidity += 1 // pump 작동으로 습도 상승
-        airfarmData.co2Level -= 5 // 광합성으로 인한 co2 농도 감소
+        airfarmData.co2Level -= 10 // 광합성으로 인한 co2 농도 감소
     }
 
-    // Fan 효과
+    // Fan 작동시
     if (deviceStatus.fan) {
-        airfarmData.co2Level += 10 // 환기로 외부의 co2 유입되어 co2 농도 상승
-        // airfarmData.humidity -= 0.2 // 환기로 습도 감소
-    } else {
-        airfarmData.co2Level -= 5 // 환기가 꺼져있으면 co2 농도 감소
+        if (outAirfarmData.temperature > airfarmData.temperature) {
+            airfarmData.temperature += 1.1 // 외기 온도가 높으면 내기 온도 상승
+        } else {
+            airfarmData.temperature -= 1.1 // 외기 온도가 낮으면 내기 온도 감소
+        }
+        if (outAirfarmData.humidity > airfarmData.humidity) {
+            airfarmData.humidity += 1 // 외기 온도가 높으면 내기 온도 상승
+        } else {
+            airfarmData.humidity -= 1 // 외기 온도가 낮으면 내기 온도 감소
+        }
+        if (outAirfarmData.co2Level > airfarmData.co2Level) {
+            airfarmData.co2Level += 20 // 외기 온도가 높으면 내기 온도 상승
+        } else {
+            airfarmData.co2Level -= 20 // 외기 온도가 낮으면 내기 온도 감소
+        }
     }
 }
 
