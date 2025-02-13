@@ -9,6 +9,7 @@ import {
     SENSOR_TOPIC,
     THRESHOLD_TOPIC,
     thresholdConfigSchema,
+    deviceState,
 } from './common'
 import { MqttRouter } from './mqtt-router'
 
@@ -66,8 +67,7 @@ router.match(SENSOR_TOPIC, airfarmDataSchema, (message) => {
 
     console.log('Current Thresholds:', thresholds)
 
-    // 이게 뭔지 알아볼 필요 있음
-    const controlCmd: Partial<{ led: boolean; pump: boolean; fan: boolean }> = {}
+    const controlCmd: deviceState = {}
 
     // LED 제어 : 온도 기준 컨트롤
     if (message.temperature > thresholds.maxTemp) {
