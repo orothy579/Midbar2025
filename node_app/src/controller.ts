@@ -17,7 +17,7 @@ const thresholds = {
     maxTemp: 25,
     minTemp: 18,
     maxHumid: 80,
-    minHumid: 75,
+    minHumid: 40,
     maxCo2: 600,
     minCo2: 400,
 }
@@ -62,6 +62,19 @@ client.on('error', (err) => {
 const router = new MqttRouter()
 
 // Control devices based on sensor data
+// [외기 가정] temp: 20도,  humid: 50%, co2 : 500ppm
+// [saturation]
+
+// 내기와 외기가 서로 상호작용 받아서, 내기 상태 유지, 외기 상태도 유지? 아니면 항상 같은 상태 유지?
+// 외기가 내기보다 온도 변화량이 적을 것.
+
+// < 내기 변화 조건 >
+// LED & Pump -> co2 down else co2 변화 없음
+// !LED & Pump -> humid up else humid down
+// LED & !Pump -> temp up else temp down
+// !LED
+// FAN  -> temp down , co2 up , humid down
+
 router.match(SENSOR_TOPIC, airfarmDataSchema, (message) => {
     console.log('\nvalid SENSOR Data:', message)
 
@@ -108,18 +121,23 @@ router.match(THRESHOLD_TOPIC, thresholdConfigSchema.partial(), (message, topic, 
 
 const cron = require('node-cron')
 
-// 매일 오전 7시 부터 22시 까지 실행
-cron.schedule('0 7-22 * * *', () => {
+// // 매일 오전 7시 부터 22시 까지 실행
+// cron.schedule('* 7-22 * * *', () => {
+//     deviceStatus.led = !deviceStatus.led
+//     console.log('LED:', deviceStatus.led)
+//     pub(CONTROL_TOPIC, deviceStatus)
+// })
+
+// 매 분마다 실행
+cron.schedule('* * * * *', () => {
     deviceStatus.led = !deviceStatus.led
+    if (deviceStatus.led === true) {
+        console.log('LED ON : 식물이 광합성을 시작합니다.')
+    } else {
+        console.log('LED OFF : 식물이 호흡을 시작합니다.')
+    }
     pub(CONTROL_TOPIC, deviceStatus)
 })
-
-// Control LED with timer [ 이전 상황을 고려하지 않고, 시간에 따라 무조건 바꿈. --> 수정 필요 ]
-// cron 사용해서 LED 타이머 제어
-// setInterval(() => {
-//     deviceStatus.led = !deviceStatus.led
-//     pub(LED_CONTROL_TOPIC, deviceStatus.led)
-// }, 50000)
 
 // task 개념 추가
 // Control Pump with timer

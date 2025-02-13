@@ -73,12 +73,26 @@ router.match(CONTROL_TOPIC, deviceStateSchema.partial(), (message, topic, param)
 })
 
 function updateState() {
-    // LED 효과
-    if (deviceStatus.led) {
+    // LED off 밤 (식물 호흡)
+    if (!deviceStatus.led && !deviceStatus.pump) {
+        airfarmData.co2Level += 10 // 식물 호흡으로 인한 co2 농도 상승
+    }
+
+    if (!deviceStatus.led && deviceStatus.pump) {
+        airfarmData.humidity += 1 // pump 작동으로 습도 상승
+        airfarmData.co2Level += 10 // 식물 호흡으로 인한 co2 농도 상승
+    }
+    // LED on 낮 (식물 광합성)
+    if (deviceStatus.led && !deviceStatus.pump) {
         airfarmData.temperature += 0.1 // LED 작동으로 발생하는 열
-        // airfarmData.co2Level -= 5 // LED 작동으로 광합성 -> co2 농도 감소
-    } else {
-        airfarmData.temperature -= 0.05 // LED가 꺼져있으면 온도가 서서히 떨어짐
+        airfarmData.humidity -= 2 // 온도 상승으로 인한 상대 습도 감소
+        airfarmData.co2Level -= 5 // 광합성으로 인한 co2 농도 감소
+    }
+
+    if (deviceStatus.led && deviceStatus.pump) {
+        airfarmData.temperature += 0.1 // LED 작동으로 발생하는 열
+        airfarmData.humidity += 1 // pump 작동으로 습도 상승
+        airfarmData.co2Level -= 5 // 광합성으로 인한 co2 농도 감소
     }
 
     // Fan 효과
@@ -88,13 +102,6 @@ function updateState() {
     } else {
         airfarmData.co2Level -= 5 // 환기가 꺼져있으면 co2 농도 감소
     }
-
-    // Pump 효과
-    if (deviceStatus.pump) {
-        airfarmData.humidity += 1 // pump 작동으로 습도 상승
-    } else {
-        airfarmData.humidity -= 0.5 // pump 꺼져있으면 습도 하락
-    }
 }
 
-setInterval(updateState, 2000)
+setInterval(updateState, 1000)
