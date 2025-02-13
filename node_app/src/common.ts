@@ -23,6 +23,12 @@ export const deviceStateSchema = z.object({
 
 export type deviceState = z.infer<typeof deviceStateSchema>
 
+export const deviceStatus: deviceState = {
+    led: false,
+    fan: false,
+    pump: false,
+}
+
 export const thresholdConfigSchema = z.object({
     maxTemp: z.number(),
     minTemp: z.number(),

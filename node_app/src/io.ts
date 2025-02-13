@@ -1,6 +1,6 @@
 import mqtt from 'mqtt'
 import dotenv from 'dotenv'
-import { CONTROL_TOPIC, deviceStateSchema, SENSOR_TOPIC, IO_TOPIC } from './common'
+import { CONTROL_TOPIC, deviceStateSchema, SENSOR_TOPIC, IO_TOPIC, deviceStatus } from './common'
 
 import { MqttRouter } from './mqtt-router'
 
@@ -11,12 +11,6 @@ const brokerUrl = process.env.BROKER_URL
 
 if (!brokerUrl) {
     throw new Error('BROKER_URL is required')
-}
-
-const deviceStatus = {
-    led: false,
-    fan: false,
-    pump: false,
 }
 
 let airfarmData = {
@@ -97,9 +91,9 @@ function updateState() {
 
     // Pump 효과
     if (deviceStatus.pump) {
-        airfarmData.humidity += 0.2 // pump 작동으로 습도 상승
+        airfarmData.humidity += 1 // pump 작동으로 습도 상승
     } else {
-        airfarmData.humidity -= 0.1 // pump 꺼져있으면 습도 하락
+        airfarmData.humidity -= 0.5 // pump 꺼져있으면 습도 하락
     }
 }
 

@@ -9,7 +9,7 @@ import {
     SENSOR_TOPIC,
     THRESHOLD_TOPIC,
     thresholdConfigSchema,
-    deviceState,
+    deviceStatus,
 } from './common'
 import { MqttRouter } from './mqtt-router'
 
@@ -67,35 +67,33 @@ router.match(SENSOR_TOPIC, airfarmDataSchema, (message) => {
 
     console.log('Current Thresholds:', thresholds)
 
-    const controlCmd: deviceState = {}
-
     // LED 제어 : 온도 기준 컨트롤
     if (message.temperature > thresholds.maxTemp) {
-        controlCmd.led = false
+        deviceStatus.led = false
         console.log('LED OFF : temp >', thresholds.maxTemp)
     } else if (message.temperature < thresholds.minTemp) {
-        controlCmd.led = true
+        deviceStatus.led = true
         console.log('LED ON : temp <', thresholds.minTemp)
     }
 
     // Pump 제어 : 습도 기준 컨트롤
     if (message.humidity > thresholds.maxHumid) {
-        controlCmd.pump = false
+        deviceStatus.pump = false
         console.log('PUMP OFF : humid >', thresholds.maxHumid)
     } else if (message.humidity < thresholds.minHumid) {
-        controlCmd.pump = true
+        deviceStatus.pump = true
         console.log('PUMP ON : humid <', thresholds.minHumid)
     }
 
     // FAN 제어 : CO2 기준 컨트롤
     if (message.co2Level > thresholds.maxCo2) {
-        controlCmd.fan = false
+        deviceStatus.fan = false
         console.log('FAN OFF : co2 >', thresholds.maxCo2)
     } else if (message.co2Level < thresholds.minCo2) {
-        controlCmd.fan = true
+        deviceStatus.fan = true
         console.log('FAN ON : co2 <', thresholds.minCo2)
     }
-    pub(CONTROL_TOPIC, controlCmd)
+    pub(CONTROL_TOPIC, deviceStatus)
 })
 
 router.match(IO_TOPIC, deviceStateSchema, (message) => {
@@ -108,7 +106,12 @@ router.match(THRESHOLD_TOPIC, thresholdConfigSchema.partial(), (message, topic, 
     console.log('\nThresholds updated:', thresholds)
 })
 
+const cron = require('node-cron')
+
+cron.schedule('* * * * *', () => {})
+
 // Control LED with timer [ 이전 상황을 고려하지 않고, 시간에 따라 무조건 바꿈. --> 수정 필요 ]
+// cron 사용해서 LED 타이머 제어
 // setInterval(() => {
 //     deviceStatus.led = !deviceStatus.led
 //     pub(LED_CONTROL_TOPIC, deviceStatus.led)
