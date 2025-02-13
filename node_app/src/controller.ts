@@ -62,19 +62,6 @@ client.on('error', (err) => {
 const router = new MqttRouter()
 
 // Control devices based on sensor data
-// [외기 가정] temp: 20도,  humid: 50%, co2 : 500ppm
-// [saturation]
-
-// 내기와 외기가 서로 상호작용 받아서, 내기 상태 유지, 외기 상태도 유지? 아니면 항상 같은 상태 유지?
-// 외기가 내기보다 온도 변화량이 적을 것.
-
-// < 내기 변화 조건 >
-// LED & Pump -> co2 down else co2 변화 없음
-// !LED & Pump -> humid up else humid down
-// LED & !Pump -> temp up else temp down
-// !LED
-// FAN  -> temp down , co2 up , humid down
-
 router.match(SENSOR_TOPIC, airfarmDataSchema, (message) => {
     console.log('\nvalid SENSOR Data:', message)
 

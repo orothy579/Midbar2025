@@ -20,7 +20,7 @@ let airfarmData = {
     timestamp: new Date(),
 }
 
-// 외기
+// 외기 가정, 외기는 항상 같은 상태 유지 한다고 가정
 let outAirfarmData = {
     temperature: 20,
     humidity: 70,
