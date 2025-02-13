@@ -108,7 +108,11 @@ router.match(THRESHOLD_TOPIC, thresholdConfigSchema.partial(), (message, topic, 
 
 const cron = require('node-cron')
 
-cron.schedule('* * * * *', () => {})
+// 매일 오전 7시 부터 22시 까지 실행
+cron.schedule('0 7-22 * * *', () => {
+    deviceStatus.led = !deviceStatus.led
+    pub(CONTROL_TOPIC, deviceStatus)
+})
 
 // Control LED with timer [ 이전 상황을 고려하지 않고, 시간에 따라 무조건 바꿈. --> 수정 필요 ]
 // cron 사용해서 LED 타이머 제어
