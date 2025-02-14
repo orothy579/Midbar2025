@@ -60,6 +60,8 @@ const client = mqtt.connect(brokerUrl)
 client.on('connect', () => {
     console.log('\nSubscriber connected to nanoMQ')
 
+    startSpray()
+
     client.subscribe(
         [DATA_TOPIC, THRESHOLD_TOPIC, CONTROL_TOPIC_LED, CONTROL_TOPIC_SPRAY],
         (err) => {
@@ -122,8 +124,8 @@ router.match(THRESHOLD_TOPIC, thresholdConfigSchema.partial(), (message, topic, 
 })
 
 // 기존에 등록된 cron 작업을 저장할 변수 선언
-let ledOnTask: cron.ScheduledTask | null = null
-let ledOffTask: cron.ScheduledTask | null = null
+let ledOnTask: cron.ScheduledTask
+let ledOffTask: cron.ScheduledTask
 
 // Update LED on/off time
 router.match(CONTROL_TOPIC_LED, ledTimeSchema.partial(), (message) => {
@@ -150,8 +152,65 @@ router.match(CONTROL_TOPIC_LED, ledTimeSchema.partial(), (message) => {
     })
 })
 
-// Spray control
+let pumpCmd = false // pump on/off flag
+let sprayTimer: NodeJS.Timeout // spray 사이클 재실행 타이머 저장 변수
+
+/**
+ *  한 duration에 분사 실행.
+ *  - pumpCmd가 true이면, pump를 true, spray.duration 동안 유지.
+ *  - spray.duration이 지나면 pump를 false, pumpCmd가 여전히 true이면
+ *    spray.interval 후에 다음 사이클(runSpray)을 재귀적으로 호출
+ */
+function runSpray() {
+    if (!pumpCmd) return
+
+    deviceStatus.pump = true
+    pub(CONTROL_TOPIC, deviceStatus)
+    console.log(`\nPump on: ${spray.duration}초 동안 pump ON`)
+
+    setTimeout(() => {
+        deviceStatus.pump = false
+        pub(CONTROL_TOPIC, deviceStatus)
+        console.log('\nPump off : spray duration end')
+
+        if (pumpCmd) {
+            sprayTimer = setTimeout(() => {
+                runSpray()
+            }, spray.interval * 1000)
+        }
+    }, spray.duration * 1000)
+}
+
+// spray 시작 함수
+function startSpray() {
+    pumpCmd = true
+    runSpray()
+}
+
+// spray 중지 함수
+function stopSpray() {
+    pumpCmd = false
+    if (sprayTimer) {
+        clearTimeout(sprayTimer)
+    }
+    deviceStatus.pump = false
+    console.log('Spray 중지')
+}
+
+// Spray duration, interval 설정
 router.match(CONTROL_TOPIC_SPRAY, spraySchema.partial(), (message) => {
     Object.assign(spray, message)
     console.log('\nSpray Data:', message)
+})
+
+// pump on/off control 수동 조작
+router.match(CONTROL_TOPIC, deviceStateSchema.partial(), (message) => {
+    Object.assign(deviceStatus, message)
+    console.log('\nDevice status updated:', deviceStatus)
+    pumpCmd = deviceStatus.pump!
+    if (pumpCmd) {
+        startSpray()
+    } else {
+        stopSpray()
+    }
 })
