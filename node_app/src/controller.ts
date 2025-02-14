@@ -1,5 +1,7 @@
 import mqtt from 'mqtt'
 import dotenv from 'dotenv'
+import * as cron from 'node-cron'
+
 import {
     airfarmDataSchema,
     CONTROL_TOPIC,
@@ -109,7 +111,9 @@ router.match(THRESHOLD_TOPIC, thresholdConfigSchema.partial(), (message, topic, 
     console.log('\nThresholds updated:', thresholds)
 })
 
-const cron = require('node-cron')
+// 기존에 등록된 cron 작업을 저장할 변수 선언
+let ledOnTask: cron.ScheduledTask | null = null
+let ledOffTask: cron.ScheduledTask | null = null
 
 // Update LED on/off time
 router.match(LED_TOPIC, ledTimeSchema.partial(), (message) => {
@@ -118,13 +122,18 @@ router.match(LED_TOPIC, ledTimeSchema.partial(), (message) => {
     const ledOnCron = convertToCron(ledTime.onHour, ledTime.onMinute)
     const ledOffCron = convertToCron(ledTime.offHour, ledTime.offMinute)
 
-    cron.schedule(ledOnCron, () => {
+    // 기존 작업이 있다면 취소
+    if (ledOnTask) ledOnTask.stop()
+    if (ledOffTask) ledOffTask.stop()
+
+    // 새로운 cron 작업 등록
+    ledOnTask = cron.schedule(ledOnCron, () => {
         deviceStatus.led = true
         console.log('LED ON : 식물이 광합성을 시작합니다.')
         pub(CONTROL_TOPIC, deviceStatus)
     })
 
-    cron.schedule(ledOffCron, () => {
+    ledOffTask = cron.schedule(ledOffCron, () => {
         deviceStatus.led = false
         console.log('LED OFF : 식물이 호흡을 시작합니다.')
         pub(CONTROL_TOPIC, deviceStatus)
