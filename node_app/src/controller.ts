@@ -12,8 +12,10 @@ import {
     THRESHOLD_TOPIC,
     thresholdConfigSchema,
     deviceStatus,
-    LED_TOPIC,
+    CONTROL_TOPIC_LED,
     ledTimeSchema,
+    CONTROL_TOPIC_SPRAY,
+    spraySchema,
 } from './common'
 import { MqttRouter } from './mqtt-router'
 
@@ -31,6 +33,11 @@ const ledTime = {
     onMinute: 15,
     offHour: 22,
     offMinute: 0,
+}
+
+const spray = {
+    duration: 5,
+    interval: 30,
 }
 
 dotenv.config()
@@ -53,13 +60,16 @@ const client = mqtt.connect(brokerUrl)
 client.on('connect', () => {
     console.log('\nSubscriber connected to nanoMQ')
 
-    client.subscribe([DATA_TOPIC, THRESHOLD_TOPIC, LED_TOPIC], (err) => {
-        if (err) {
-            console.error('Subscribe error:', err)
-            return
+    client.subscribe(
+        [DATA_TOPIC, THRESHOLD_TOPIC, CONTROL_TOPIC_LED, CONTROL_TOPIC_SPRAY],
+        (err) => {
+            if (err) {
+                console.error('Subscribe error:', err)
+                return
+            }
+            console.log(`Subscribed complete from contorller`)
         }
-        console.log(`Subscribed to ${DATA_TOPIC} and ${THRESHOLD_TOPIC}`)
-    })
+    )
 })
 
 client.on('message', (topic, message) => {
@@ -116,7 +126,7 @@ let ledOnTask: cron.ScheduledTask | null = null
 let ledOffTask: cron.ScheduledTask | null = null
 
 // Update LED on/off time
-router.match(LED_TOPIC, ledTimeSchema.partial(), (message) => {
+router.match(CONTROL_TOPIC_LED, ledTimeSchema.partial(), (message) => {
     Object.assign(ledTime, message)
     console.log('\nLED Time updated:', ledTime)
     const ledOnCron = convertToCron(ledTime.onHour, ledTime.onMinute)
@@ -138,4 +148,10 @@ router.match(LED_TOPIC, ledTimeSchema.partial(), (message) => {
         console.log('LED OFF : 식물이 호흡을 시작합니다.')
         pub(CONTROL_TOPIC, deviceStatus)
     })
+})
+
+// Spray control
+router.match(CONTROL_TOPIC_SPRAY, spraySchema.partial(), (message) => {
+    Object.assign(spray, message)
+    console.log('\nSpray Data:', message)
 })
