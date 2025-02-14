@@ -3,6 +3,7 @@ import { z } from 'zod'
 export const DATA_TOPIC = 'airfarm/+/data'
 export const SENSOR_TOPIC = 'airfarm/sensors/data'
 export const IO_TOPIC = 'airfarm/io/data'
+export const LED_TOPIC = 'airfarm/io/data/led'
 
 export const CONTROL_TOPIC = 'airfarm/control'
 
@@ -36,4 +37,11 @@ export const thresholdConfigSchema = z.object({
     minHumid: z.number(),
     maxCo2: z.number(),
     minCo2: z.number(),
+})
+
+export const ledTime = z.object({
+    onHour: z.number(),
+    onMinute: z.number(),
+    OffHour: z.number(),
+    offMinute: z.number(),
 })

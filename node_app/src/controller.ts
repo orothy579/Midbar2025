@@ -10,6 +10,7 @@ import {
     THRESHOLD_TOPIC,
     thresholdConfigSchema,
     deviceStatus,
+    LED_TOPIC,
 } from './common'
 import { MqttRouter } from './mqtt-router'
 
@@ -38,7 +39,7 @@ const client = mqtt.connect(brokerUrl)
 client.on('connect', () => {
     console.log('\nSubscriber connected to nanoMQ')
 
-    client.subscribe([DATA_TOPIC, THRESHOLD_TOPIC], (err) => {
+    client.subscribe([DATA_TOPIC, THRESHOLD_TOPIC, LED_TOPIC], (err) => {
         if (err) {
             console.error('Subscribe error:', err)
             return
@@ -105,20 +106,32 @@ const cron = require('node-cron')
 //     pub(CONTROL_TOPIC, deviceStatus)
 // })
 
+// 1. mqtt subscribe 다른 토픽으로 해서 schedule 시간을 number 혹은 string 으로 입력 받을 것임.
+// cron 형식에 맞게, 업데이트 해야함
+// 7을 입력 받으면 '0 7 * * *' 로 변환
+// 이 scheduler 를 on 기능 1개, off 1개로 나누어서 사용할 수 있도록 구현
 // 매 분마다 실행
-cron.schedule('* * * * *', () => {
-    deviceStatus.led = !deviceStatus.led
-    if (deviceStatus.led === true) {
-        console.log('LED ON : 식물이 광합성을 시작합니다.')
-    } else {
-        console.log('LED OFF : 식물이 호흡을 시작합니다.')
-    }
+
+function convertToCron(hour: number, minute: number = 0): string {
+    return `${minute} ${hour} * * *`
+}
+
+const ledOnHour: number = 7 // 예: 오전 7시
+const ledOnMinute: number = 15 // 예: 7시 15분
+const ledOffHour: number = 22 // 예: 오후 10시
+const ledOffMinute: number = 0 // 예: 10시 0분
+
+const ledOnCron = convertToCron(ledOnHour, ledOnMinute)
+const ledOffCron = convertToCron(ledOffHour, ledOffMinute)
+
+cron.schedule(ledOnCron, () => {
+    deviceStatus.led = true
+    console.log('LED ON : 식물이 광합성을 시작합니다.')
     pub(CONTROL_TOPIC, deviceStatus)
 })
 
-// task 개념 추가
-// Control Pump with timer
-// setInterval(() => {
-//     deviceStatus.pump = !deviceStatus.pump
-//     pub(PUMP_CONTROL_TOPIC, deviceStatus.pump)
-// }, 10000)
+cron.schedule(ledOffCron, () => {
+    deviceStatus.led = false
+    console.log('LED OFF : 식물이 호흡을 시작합니다.')
+    pub(CONTROL_TOPIC, deviceStatus)
+})
