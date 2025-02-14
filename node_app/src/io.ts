@@ -13,7 +13,7 @@ if (!brokerUrl) {
     throw new Error('BROKER_URL is required')
 }
 
-let airfarmData = {
+const airfarmData = {
     temperature: 25, // 25 degree celsius
     humidity: 60, // 60% humidity
     co2Level: 500, // 500 ppm
@@ -21,10 +21,17 @@ let airfarmData = {
 }
 
 // 외기 가정, 외기는 항상 같은 상태 유지 한다고 가정
-let outAirfarmData = {
+const outAirfarmData = {
     temperature: 20,
     humidity: 70,
     co2Level: 500,
+}
+
+// saturation boundaries definition
+const saturationBounds = {
+    temperature: { min: 15, max: 30 },
+    humidity: { min: 10, max: 90 },
+    co2Level: { min: 300, max: 700 },
 }
 
 // airfarmData에 현재 시간을 업데이트한 후 반환
@@ -104,20 +111,37 @@ function updateState() {
 
     // Fan 작동시
     if (deviceStatus.fan) {
+        // 온도 조정 (외기 온도가 크면 내부 온도 상승, 작은 경우 하강)
         if (outAirfarmData.temperature > airfarmData.temperature) {
-            airfarmData.temperature += 1.1 // 외기 온도가 높으면 내기 온도 상승
+            airfarmData.temperature = Math.min(
+                airfarmData.temperature + 1.1,
+                saturationBounds.temperature.max
+            )
         } else {
-            airfarmData.temperature -= 1.1 // 외기 온도가 낮으면 내기 온도 감소
+            airfarmData.temperature = Math.max(
+                airfarmData.temperature - 1.1,
+                saturationBounds.temperature.min
+            )
         }
+
+        // 습도 조정
         if (outAirfarmData.humidity > airfarmData.humidity) {
-            airfarmData.humidity += 1 // 외기 온도가 높으면 내기 온도 상승
+            airfarmData.humidity = Math.min(airfarmData.humidity + 1, saturationBounds.humidity.max)
         } else {
-            airfarmData.humidity -= 1 // 외기 온도가 낮으면 내기 온도 감소
+            airfarmData.humidity = Math.max(airfarmData.humidity - 1, saturationBounds.humidity.min)
         }
+
+        // CO2 레벨 조정
         if (outAirfarmData.co2Level > airfarmData.co2Level) {
-            airfarmData.co2Level += 20 // 외기 온도가 높으면 내기 온도 상승
+            airfarmData.co2Level = Math.min(
+                airfarmData.co2Level + 20,
+                saturationBounds.co2Level.max
+            )
         } else {
-            airfarmData.co2Level -= 20 // 외기 온도가 낮으면 내기 온도 감소
+            airfarmData.co2Level = Math.max(
+                airfarmData.co2Level - 20,
+                saturationBounds.co2Level.min
+            )
         }
     }
 }
