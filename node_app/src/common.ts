@@ -39,7 +39,7 @@ export const thresholdConfigSchema = z.object({
     minCo2: z.number(),
 })
 
-export const ledTime = z.object({
+export const ledTimeSchema = z.object({
     onHour: z.number(),
     onMinute: z.number(),
     OffHour: z.number(),
