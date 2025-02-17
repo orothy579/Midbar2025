@@ -5,6 +5,12 @@
       "host": "localhost",
       "port": 1883,
       "clientId": "vsmqtt_client_bd69"
+    },
+    {
+      "name": "test2",
+      "host": "localhost",
+      "port": 1883,
+      "clientId": "vsmqtt_client_7190"
     }
   ]
 }

@@ -1,5 +1,6 @@
-import mqtt from 'mqtt'
 import dotenv from 'dotenv'
+dotenv.config()
+import mqtt from 'mqtt'
 import * as cron from 'node-cron'
 
 import {
@@ -16,6 +17,8 @@ import {
     ledTimeSchema,
     CONTROL_TOPIC_SPRAY,
     spraySchema,
+    Time,
+    LedTime,
 } from './common'
 import { MqttRouter } from './mqtt-router'
 
@@ -28,11 +31,9 @@ const thresholds = {
     minCo2: 400,
 }
 
-const ledTime = {
-    onHour: 7,
-    onMinute: 15,
-    offHour: 22,
-    offMinute: 0,
+const ledTime: LedTime = {
+    onTime: { hour: 6, minute: 0 },
+    offTime: { hour: 18, minute: 0 },
 }
 
 const spray = {
@@ -40,13 +41,11 @@ const spray = {
     interval: 30,
 }
 
-dotenv.config()
-
 function pub(topic: string, message: unknown) {
     client.publish(topic, JSON.stringify(message))
 }
 
-function convertToCron(hour: number, minute: number): string {
+function convertToCron({ minute, hour }: Time): string {
     return `${minute} ${hour} * * *`
 }
 
@@ -63,7 +62,7 @@ client.on('connect', () => {
     startSpray()
 
     client.subscribe(
-        [DATA_TOPIC, THRESHOLD_TOPIC, CONTROL_TOPIC_LED, CONTROL_TOPIC_SPRAY],
+        [DATA_TOPIC, THRESHOLD_TOPIC, CONTROL_TOPIC_LED, CONTROL_TOPIC_SPRAY, CONTROL_TOPIC],
         (err) => {
             if (err) {
                 console.error('Subscribe error:', err)
@@ -94,6 +93,14 @@ router.match(SENSOR_TOPIC, airfarmDataSchema, (message) => {
 
     console.log('Current Thresholds:', thresholds)
 
+    deviceStatus.fan =
+        message.temperature > thresholds.maxTemp ||
+        message.humidity > thresholds.maxHumid ||
+        message.co2Level > thresholds.maxCo2 ||
+        message.temperature < thresholds.minTemp ||
+        message.humidity < thresholds.minHumid ||
+        message.co2Level < thresholds.minCo2
+
     // Fan 으로만 제어, Fan으로 온도, 습도, co2 제어.
     if (
         message.temperature > thresholds.maxTemp ||
@@ -105,12 +112,11 @@ router.match(SENSOR_TOPIC, airfarmDataSchema, (message) => {
     ) {
         deviceStatus.fan = true
         console.log('FAN ON : out of threshold')
-        pub(CONTROL_TOPIC, deviceStatus)
     } else {
         deviceStatus.fan = false
         console.log('FAN OFF : all values in threshold')
-        pub(CONTROL_TOPIC, deviceStatus)
     }
+    pub(CONTROL_TOPIC, deviceStatus)
 })
 
 router.match(IO_TOPIC, deviceStateSchema, (message) => {
@@ -128,11 +134,12 @@ let ledOnTask: cron.ScheduledTask
 let ledOffTask: cron.ScheduledTask
 
 // Update LED on/off time
-router.match(CONTROL_TOPIC_LED, ledTimeSchema.partial(), (message) => {
+router.match(CONTROL_TOPIC_LED, ledTimeSchema, (message) => {
     Object.assign(ledTime, message)
+
     console.log('\nLED Time updated:', ledTime)
-    const ledOnCron = convertToCron(ledTime.onHour, ledTime.onMinute)
-    const ledOffCron = convertToCron(ledTime.offHour, ledTime.offMinute)
+    const ledOnCron = convertToCron(ledTime.onTime)
+    const ledOffCron = convertToCron(ledTime.offTime)
 
     // 기존 작업이 있다면 취소
     if (ledOnTask) ledOnTask.stop()
@@ -156,23 +163,27 @@ let pumpCmd = false // pump on/off flag
 let sprayTimer: NodeJS.Timeout // spray 사이클 재실행 타이머 저장 변수
 
 /**
- *  한 duration에 분사 실행.
- *  - pumpCmd가 true이면, pump를 true, spray.duration 동안 유지.
- *  - spray.duration이 지나면 pump를 false, pumpCmd가 여전히 true이면
- *    spray.interval 후에 다음 사이클(runSpray)을 재귀적으로 호출
+ *  한 spray 사이클마다 분사 실행.
+ *  pumpCmd가 true이면, pump를 true, spray.duration 동안 유지.
+ *  spray.duration이 지나면 pump를 false, pumpCmd가 여전히 true이면
+ *   spray.interval 후에 다음 사이클(runSpray)을 재귀적으로 호출
  */
 function runSpray() {
     if (!pumpCmd) return
 
+    // spray 사이클 시작 : pump on 상태로 설정 후 mqtt 전송
     deviceStatus.pump = true
     pub(CONTROL_TOPIC, deviceStatus)
     console.log(`\nPump on: ${spray.duration}초 동안 pump ON`)
 
+    // spray.duration()동안 pump on 상태 유지된 후 실행될 call back 함수
     setTimeout(() => {
+        // spray 사이클 종료 : pump off 상태로 설정 후 mqtt 전송
         deviceStatus.pump = false
         pub(CONTROL_TOPIC, deviceStatus)
         console.log('\nPump off : spray duration end')
 
+        // pump on 명령이 여전히 true이면, spray.interval 후에 다시 runSpray() 호출
         if (pumpCmd) {
             sprayTimer = setTimeout(() => {
                 runSpray()
@@ -203,14 +214,14 @@ router.match(CONTROL_TOPIC_SPRAY, spraySchema.partial(), (message) => {
     console.log('\nSpray Data:', message)
 })
 
-// pump on/off control 수동 조작
+// mqtt를 통한 spray on/off 제어
 router.match(CONTROL_TOPIC, deviceStateSchema.partial(), (message) => {
     Object.assign(deviceStatus, message)
-    console.log('\nDevice status updated:', deviceStatus)
-    pumpCmd = deviceStatus.pump!
-    if (pumpCmd) {
+    if (deviceStatus.pump && !pumpCmd) {
+        pumpCmd = true
         startSpray()
-    } else {
+    } else if (deviceStatus.pump === false && pumpCmd) {
+        pumpCmd = false
         stopSpray()
     }
 })
