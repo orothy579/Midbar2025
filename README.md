@@ -41,13 +41,3 @@ AirFarm 공조 시스템을 제어하고 센서 데이터를 수집하는 **Node
 | **Node.js** | 백엔드 실행 환경 |
 | **TypeScript** | 정적 타입 지원 개발 언어 |
 | **MQTT** | IoT 메시지 브로커 및 장치 제어 |
-
----
-
-## 🚀 **설치 및 실행 방법**
-
-### **1️⃣ 환경 설정**
-#### **Node.js & TypeScript 설치**
-```sh
-brew install node
-npm install -g typescript ts-node
